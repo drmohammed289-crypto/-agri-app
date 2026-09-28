@@ -8,9 +8,7 @@ from scipy.stats import jarque_bera
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.stattools import adfuller, coint, kpss  # تم تصحيح الاستيراد هنا
-from statsmodels.tsa.vector_ar.var_model import VAR
-from statsmodels.tsa.vector_ar.vecm import coin_johansen
+from statsmodels.tsa.stattools import adfuller, coint, kpss
 import streamlit as st
 
 # إعدادات صفحة التطبيق
@@ -62,7 +60,7 @@ if not check_password():
   st.stop()
 
 # ---------------------------------------------------------
-# 🚀 واجهة التطبيق الرئيسية وتوثيق المرجع التقني والبرمجي
+# 🚀 واجهة التطبيق الرئيسية
 # ---------------------------------------------------------
 st.title("🌾 منصة الخبير الاقتصادي والقياسي الذكي (الإصدار الشامل)")
 st.write(
@@ -72,17 +70,15 @@ st.write(
     " للمشروعات."
 )
 
-# القائمة الجانبية لتحديد أقسام المنصة
 st.sidebar.header("⚙️ إعدادات المنصة")
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "### 💻 هُوية البرنامج والمرجع التقني\n"
-    "**اسم البرنامج:** منصة الخبير الاقتصادي والقياسي الذكي\n"
-    "*(Smart Econometric & Economic Expert Platform)*\n\n"
+    "**اسم البرنامج:** منصة الخبير الاقتصادي والقياسي الذكي\n\n"
     "**المرجع التقني والبرمجي:**\n"
     "- **لغة البرمجة:** Python\n"
     "- **المكتبات المستخدمة:** Statsmodels, Pandas, SciPy, NumPy, Streamlit\n"
-    "**الإصدار:** 2026 الشامل والمحدث بكافة القياسات والاختبارات"
+    "**الإصدار:** 2026 الشامل والمحدث"
 )
 st.sidebar.markdown("---")
 
@@ -185,12 +181,9 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         st.markdown("### 🔍 الفحوصات والاختبارات القياسية الإضافية للبواقي:")
         residuals = model.resid
 
-        # 1. اختبار Durbin-Watson للارتباط الذاتي
         dw_stat = sm.stats.stattools.durbin_watson(residuals)
-        # 2. اختبار Jarque-Bera للتوزيع الطبيعي
         jb_stat, jb_p = jarque_bera(residuals)
 
-        # 3 & 4. اختبارات ثبات التباين (Breusch-Pagan & White) بشكل آمن
         bp_p, wh_p = 1.0, 1.0
         try:
           from statsmodels.stats.diagnostic import het_breuschpagan, het_white
@@ -203,9 +196,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         col_d1, col_d2 = st.columns(2)
         with col_d1:
           st.metric("معامل دوربن-واتسون (Durbin-Watson)", f"{dw_stat:.4f}")
-          st.write(
-              "*(دلالة: القيمة قرب 2 تعني عدم وجود ارتباط ذاتي)*"
-          )
+          st.write("*(دلالة: القيمة قرب 2 تعني عدم وجود ارتباط ذاتي)*")
           st.metric(
               "اختبار جارك-بيرا للتوزيع الطبيعي (JB p-value)", f"{jb_p:.4f}"
           )
@@ -215,8 +206,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
           )
           st.metric("اختبار وايت لثبات التباين (White p-value)", f"{wh_p:.4f}")
 
-        # 5. حساب معامل التضخم المتعدد (VIF)
-        st.markdown("### 📐 قياس التعدد الخطي المفرد (VIF - Variance Inflation Factor):")
+        st.markdown("### 📐 قياس التعدد الخطي المفرد (VIF):")
         vif_data = pd.DataFrame()
         vif_data["المتغير"] = X.columns
         vif_data["VIF"] = [
@@ -249,10 +239,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         show_program_credit()
 
     else:
-      st.info(
-          "يرجى اختيار القسم الفرعي المطلوب أو الانتقال لقسم اختبارات جذر الوحدة"
-          " والسلاسل الزمنية."
-      )
+      st.info("يرجى اختيار القسم الفرعي المطلوب.")
   else:
     st.info("👈 يرجى رفع ملف البيانات من القائمة الجانبية.")
 
@@ -298,7 +285,10 @@ elif (
             value=0,
         )
 
-      if st.button("🚀 تنفيذ اختبارات جذر الوحدة الثلاثية (ADF, PP, KPSS)") and target_series:
+      if (
+          st.button("🚀 تنفيذ اختبارات جذر الوحدة الثلاثية (ADF, PP, KPSS)")
+          and target_series
+      ):
         s_data = pd.to_numeric(df[target_series], errors="coerce").dropna()
         if diff_d > 0:
           for _ in range(diff_d):
@@ -308,20 +298,21 @@ elif (
         st.markdown(
             "### 1️⃣ اختبار ديككي-فولر المعزز (Augmented Dickey-Fuller - ADF)"
         )
-        adf_res = adfuller(s_data)
-        st.write(f"- **ADF Statistic:** `{adf_res[0]:.4f}`")
-        st.write(f"- **p-value:** `{adf_res[1]:.4f}`")
-        if adf_res[1] < 0.05:
-          st.success("النتيجة: السلسلة مستقرة (Stationary) حسب اختبار ADF.")
-        else:
-          st.warning(
-              "النتيجة: السلسلة غير مستقرة وتحتوي على جذر وحدة (Non-Stationary)."
-          )
+        try:
+          adf_res = adfuller(s_data)
+          st.write(f"- **ADF Statistic:** `{adf_res[0]:.4f}`")
+          st.write(f"- **p-value:** `{adf_res[1]:.4f}`")
+          if adf_res[1] < 0.05:
+            st.success("النتيجة: السلسلة مستقرة (Stationary) حسب اختبار ADF.")
+          else:
+            st.warning(
+                "النتيجة: السلسلة غير مستقرة وتحتوي على جذر وحدة (Non-Stationary)."
+            )
+        except Exception as e:
+          st.error(f"خطأ في تنفيذ اختبار ADF: {e}")
 
         st.markdown("---")
-        st.markdown(
-            "### 2️⃣ اختبار فيليبس-بيرون (Phillips-Perron Test - PP)"
-        )
+        st.markdown("### 2️⃣ اختبار فيليبس-بيرون (Phillips-Perron Test - PP)")
         try:
           from arch.unitroot import PhillipsPerron
 
@@ -330,24 +321,18 @@ elif (
           st.write(f"- **p-value:** `{pp.pvalue:.4f}`")
         except ImportError:
           st.info(
-              "ℹ️ اختبار Phillips-Perron يعتمد على مكتبة `arch`. يرجى إضافتها إلى"
-              " ملف `requirements.txt` في مستودعك لتمكين هذا الاختبار."
+              "ℹ️ اختبار Phillips-Perron يعتمد على مكتبة `arch` غير المثبتة"
+              " حالياً."
           )
         except Exception as e:
           st.info(f"ملاحظة في اختبار PP: {e}")
 
         st.markdown("---")
-        st.markdown(
-            "### 3️⃣ اختبار KPSS (Kwiatkowski-Phillips-Schmidt-Shin)"
-        )
+        st.markdown("### 3️⃣ اختبار KPSS")
         try:
           kpss_res = kpss(s_data, regression="c", nlags="auto")
           st.write(f"- **KPSS Statistic:** `{kpss_res[0]:.4f}`")
           st.write(f"- **p-value:** `{kpss_res[1]:.4f}`")
-          st.write(
-              "*(ملاحظة: الفرضية الصفرية في KPSS تفترض الاستقرار، فإذا كان p-value"
-              " < 0.05 فهذا يدل على عدم الاستقرار)*"
-          )
         except Exception as e:
           st.info(f"ملاحظة في اختبار KPSS: {e}")
 
@@ -365,48 +350,63 @@ elif (
             "المتغير المستقل (X):", [c for c in num_cols if c != y_var], key="coint_x"
         )
 
-      if (
-          st.button("🚀 تنفيذ اختبار إنجل-غرانجر للتكامل المشترك واحتساب ECM")
-          and y_var
-          and x_var
-      ):
+      if st.button("🚀 تنفيذ اختبار إنجل-غرانجر والتكامل المشترك") and y_var and x_var:
         y_s = pd.to_numeric(df[y_var], errors="coerce")
         x_s = pd.to_numeric(df[x_var], errors="coerce")
         temp_c = pd.concat([y_s, x_s], axis=1).dropna()
 
-        # اختبار إنجل-غرانجر
-        score, p_value, crit_values = coint(temp_c[y_var], temp_c[x_var])
-        st.markdown("### 📊 نتائج اختبار إنجل-غرانجر (Engle-Granger Test):")
-        st.metric("قيمة الإحصاء (Coint Score)", f"{score:.4f}")
-        st.metric("القيمة الاحتمالية (p-value)", f"{p_value:.4f}")
-        for k, v in zip(["1%", "5%", "10%"], crit_values):
-          st.write(f"- القيمة الحرجة عند {k}: `{v:.4f}`")
+        try:
+          score, p_value, crit_values = coint(temp_c[y_var], temp_c[x_var])
+          st.markdown("### 📊 نتائج اختبار إنجل-غرانجر (Engle-Granger Test):")
+          st.metric("قيمة الإحصاء (Coint Score)", f"{score:.4f}")
+          st.metric("القيمة الاحتمالية (p-value)", f"{p_value:.4f}")
 
-        if p_value < 0.05:
-          st.success(
-              "✅ يوجد تكامل مشترك (Cointegration) بين المتغيرين على المدى الطويل!"
+          if p_value < 0.05:
+            st.success(
+                "✅ يوجد تكامل مشترك (Cointegration) بين المتغيرين على المدى الطويل!"
+            )
+            dy = temp_c[y_var].diff().dropna()
+            dx = temp_c[x_var].diff().dropna()
+            ols_long = sm.OLS(
+                temp_c[y_var], sm.add_constant(temp_c[x_var])
+            ).fit()
+            ecm_resid = ols_long.resid.shift(1).dropna()
+
+            ecm_df = pd.DataFrame({"DY": dy, "DX": dx}).loc[ecm_resid.index]
+            ecm_df["ECT_lag1"] = ecm_resid
+
+            X_ecm = sm.add_constant(ecm_df[["DX", "ECT_lag1"]])
+            ecm_model = sm.OLS(ecm_df["DY"], X_ecm).fit()
+            st.markdown("### 📉 نتائج نموذج تصحيح الخطأ (ECM):")
+            st.text(ecm_model.summary().as_text())
+          else:
+            st.warning(
+                "❌ لا يوجد دليل على وجود تكامل مشترك بين المتغيرين عند مستوى معنوية"
+                " 5%."
+            )
+        except Exception as e:
+          st.error(f"خطأ أثناء تنفيذ التكامل المشترك: {e}")
+
+        # اختبار جوهانسن بشكل آمن ومحلي لتجنب أي خطأ استيراد
+        st.markdown("---")
+        st.markdown("### 🌐 اختبار جوهانسن للتكامل المشترك (Johansen Test):")
+        try:
+          from statsmodels.tsa.vector_ar.vecm import coin_johansen
+
+          j_df = temp_c[[y_var, x_var]]
+          j_res = coin_johansen(j_df, det_order=0, k_ar_diff=1)
+          st.write(f"- **Trace Statistic:** `{j_res.lr1}`")
+          st.write(f"- **Critical Values (95%):** `{j_res.cvt[:, 1]}`")
+        except ImportError:
+          st.info(
+              "ℹ️ وحدة Johansen غير متوفرة في الإصدار الحالي من statsmodels."
+          )
+        except Exception as ex:
+          st.info(
+              "ملاحظة: يتطلب اختبار جوهانسن بيانات مستقرة نسبياً أو ضبط الفترات"
+              f" ({ex})."
           )
 
-          # بناء نموذج تصحيح الخطأ (ECM)
-          dy = temp_c[y_var].diff().dropna()
-          dx = temp_c[x_var].diff().dropna()
-          ols_long = sm.OLS(
-              temp_c[y_var], sm.add_constant(temp_c[x_var])
-          ).fit()
-          ecm_resid = ols_long.resid.shift(1).dropna()
-
-          ecm_df = pd.DataFrame({"DY": dy, "DX": dx}).loc[ecm_resid.index]
-          ecm_df["ECT_lag1"] = ecm_resid
-
-          X_ecm = sm.add_constant(ecm_df[["DX", "ECT_lag1"]])
-          ecm_model = sm.OLS(ecm_df["DY"], X_ecm).fit()
-          st.markdown("### 📉 نتائج نموذج تصحيح الخطأ (ECM):")
-          st.text(ecm_model.summary().as_text())
-        else:
-          st.warning(
-              "❌ لا يوجد دليل على وجود تكامل مشترك بين المتغيرين عند مستوى معنوية"
-              " 5%."
-          )
         show_program_credit()
 
     elif ts_sub.startswith("3"):
@@ -427,43 +427,48 @@ elif (
         steps = st.number_input("فترات التنبؤ:", 1, 24, 5)
 
       if st.button("🚀 تقدير ARIMA ومفاضلة النماذج"):
-        series = pd.to_numeric(df[t_col], errors="coerce").dropna()
-        model = ARIMA(series, order=(p_v, d_v, q_v)).fit()
-        st.text(model.summary().as_text())
+        try:
+          series = pd.to_numeric(df[t_col], errors="coerce").dropna()
+          model = ARIMA(series, order=(p_v, d_v, q_v)).fit()
+          st.text(model.summary().as_text())
 
-        st.markdown("### 📊 معايير مفاضلة واختيار النماذج الشاملة:")
-        m1, m2, m3, m4 = st.columns(4)
-        with m1:
-          st.metric("معيار أكايكي (AIC)", f"{model.aic:.2f}")
-        with m2:
-          st.metric("معيار بايز (BIC)", f"{model.bic:.2f}")
-        with m3:
-          st.metric("معيار هانان-كوين (HQIC)", f"{model.hqic:.2f}")
-        with m4:
-          st.metric("لوغاريتم الإمكان (Log Likelihood)", f"{model.llf:.2f}")
+          st.markdown("### 📊 معايير مفاضلة واختيار النماذج الشاملة:")
+          m1, m2, m3, m4 = st.columns(4)
+          with m1:
+            st.metric("معيار أكايكي (AIC)", f"{model.aic:.2f}")
+          with m2:
+            st.metric("معيار بايز (BIC)", f"{model.bic:.2f}")
+          with m3:
+            st.metric("معيار هانان-كوين (HQIC)", f"{model.hqic:.2f}")
+          with m4:
+            st.metric("لوغاريتم الإمكان (Log Likelihood)", f"{model.llf:.2f}")
 
-        # التنبؤ خارج العينة ومقاييس الدقة الداخلية
-        rmse = np.sqrt(np.mean((model.fittedvalues - series) ** 2))
-        mae = np.mean(np.abs(model.fittedvalues - series))
-        mape = np.mean(
-            np.abs((series - model.fittedvalues) / series.replace(0, np.nan))
-        ) * 100
+          rmse = np.sqrt(np.mean((model.fittedvalues - series) ** 2))
+          mae = np.mean(np.abs(model.fittedvalues - series))
+          mape = np.mean(
+              np.abs((series - model.fittedvalues) / series.replace(0, np.nan))
+          ) * 100
 
-        st.markdown("### 🎯 مقاييس دقة التنبؤ داخل العينة:")
-        d1, d2, d3 = st.columns(3)
-        with d1:
-          st.metric("جذر متوسط مربع الخطأ (RMSE)", f"{rmse:.4f}")
-        with d2:
-          st.metric("متوسط الخطأ المطلق (MAE)", f"{mae:.4f}")
-        with d3:
-          st.metric("متوسط نسبة الخطأ المطلق (MAPE %)", f"{mape:.2f}%")
+          st.markdown("### 🎯 مقاييس دقة التنبؤ داخل العينة:")
+          d1, d2, d3 = st.columns(3)
+          with d1:
+            st.metric("جذر متوسط مربع الخطأ (RMSE)", f"{rmse:.4f}")
+          with d2:
+            st.metric("متوسط الخطأ المطلق (MAE)", f"{mae:.4f}")
+          with d3:
+            st.metric("متوسط نسبة الخطأ المطلق (MAPE %)", f"{mape:.2f}%")
 
-        forecast = model.forecast(steps=steps)
-        st.markdown("### 🔮 جدول التنبؤات المستقبلية:")
-        f_df = pd.DataFrame(
-            {"فترة التنبؤ": [f"+{i}" for i in range(1, steps + 1)], "القيمة": forecast}
-        )
-        st.dataframe(f_df, use_container_width=True)
+          forecast = model.forecast(steps=steps)
+          st.markdown("### 🔮 جدول التنبؤات المستقبلية:")
+          f_df = pd.DataFrame(
+              {
+                  "فترة التنبؤ": [f"+{i}" for i in range(1, steps + 1)],
+                  "القيمة": forecast,
+              }
+          )
+          st.dataframe(f_df, use_container_width=True)
+        except Exception as e:
+          st.error(f"حدث خطأ أثناء تقدير نموذج ARIMA: {e}")
         show_program_credit()
 
     elif ts_sub.startswith("4"):
@@ -473,10 +478,15 @@ elif (
       )
       lag_order = st.number_input("عدد فترات الإبطاء (Lags):", 1, 5, 2)
       if st.button("🚀 تقدير نموذج VAR") and len(var_cols) >= 2:
-        v_df = df[var_cols].apply(pd.to_numeric, errors="coerce").dropna()
-        model_var = VAR(v_df)
-        results_var = model_var.fit(lag_order)
-        st.text(results_var.summary())
+        try:
+          from statsmodels.tsa.vector_ar.var_model import VAR
+
+          v_df = df[var_cols].apply(pd.to_numeric, errors="coerce").dropna()
+          model_var = VAR(v_df)
+          results_var = model_var.fit(lag_order)
+          st.text(results_var.summary())
+        except Exception as e:
+          st.error(f"خطأ في تقدير نموذج VAR: {e}")
         show_program_credit()
   else:
     st.info("👈 يرجى رفع ملف البيانات أولاً.")
@@ -486,17 +496,10 @@ elif (
 # =========================================================
 elif app_mode == "💰 دراسة الجدوى والتقييم المالي الشامل للمشروعات":
   st.subheader("💰 دراسة الجدوى الاقتصادية والتقييم المالي الشامل للمشروعات")
-  st.write(
-      "حساب مؤشرات ربحية المشروع: صافي القيمة الحالية (NPV)، معدل العائد الداخلي"
-      " (IRR)، نسبة المنافع للتكاليف (BCR)، فترة الاسترداد العادية والمخصومة،"
-      " ومؤشر صافي القيمة الحالية (NPVI)."
-  )
-
   c1, c2 = st.columns(2)
   with c1:
     init_inv = st.number_input(
-        "التكاليف الاستثمارية الابتدائية (Initial Investment - C0):",
-        value=150000.0,
+        "التكاليف الاستثمارية الابتدائية (C0):", value=150000.0
     )
     disc_rate = (
         st.number_input("معدل الخصم السنوي (%):", value=12.0) / 100.0
@@ -507,19 +510,18 @@ elif app_mode == "💰 دراسة الجدوى والتقييم المالي ا�
         value="40000, 45000, 50000, 55000, 60000, 65000",
     )
 
-  if st.button("🚀 حساب كافة معايير التقييم المالي ودراسة الجدوى"):
+  if st.button("🚀 حساب معايير التقييم المالي ودراسة الجدوى"):
     try:
       cfs = [float(x.strip()) for x in cf_str.split(",") if x.strip()]
       r = disc_rate
-
-      # 1. صافي القيمة الحالية (NPV)
       npv = -init_inv + sum(cf / ((1 + r) ** (i + 1)) for i, cf in enumerate(cfs))
 
-      # 2. معدل العائد الداخلي (IRR)
+
       def npv_f(rate):
         return -init_inv + sum(
             cf / ((1 + rate) ** (i + 1)) for i, cf in enumerate(cfs)
         )
+
 
       irr = np.nan
       try:
@@ -529,16 +531,12 @@ elif app_mode == "💰 دراسة الجدوى والتقييم المالي ا�
       except:
         pass
 
-      # 3. نسبة المنافع للتكاليف (BCR)
       pv_benefits = sum(
           cf / ((1 + r) ** (i + 1)) for i, cf in enumerate(cfs)
       )
       bcr = pv_benefits / init_inv if init_inv > 0 else np.nan
-
-      # 4. مؤشر صافي القيمة الحالية / مؤشر الربحية (NPVI / PI)
       npvi = pv_benefits / init_inv if init_inv > 0 else np.nan
 
-      # 5. فترة الاسترداد العادية والمخصومة (Payback & Discounted Payback)
       cum_cf = 0
       payback = np.nan
       disc_cum_cf = 0
@@ -582,14 +580,10 @@ elif app_mode == "💰 دراسة الجدوى والتقييم المالي ا�
 
       if npv > 0:
         st.success(
-            "✅ **القرار الاستثماري:** المشروع **مقبول ومربح اقتصادياً** لأن صافي"
-            " القيمة الحالية موجب ومعدل العائد الداخلي أعلى من معدل الخصم."
+            "✅ **القرار الاستثماري:** المشروع **مقبول ومربح اقتصادياً**."
         )
       else:
-        st.warning(
-            "❌ **القرار الاستثماري:** المشروع **مرفوض** لأن صافي القيمة الحالية"
-            " سالب."
-        )
+        st.warning("❌ **القرار الاستثماري:** المشروع **مرفوض**.")
       show_program_credit()
     except Exception as ex:
       st.error(f"حدث خطأ أثناء إجراء الحسابات المالية: {ex}")
