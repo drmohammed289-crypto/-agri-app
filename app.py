@@ -13,8 +13,8 @@ st.set_page_config(
 
 st.title("🌾 منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي الشاملة")
 st.write(
-    "منصة بحثية متقدمة تتضمن النماذج الاقتصادية والقياسية مع تقارير تحليلية"
-    " تلقائية."
+    "منصة بحثية متقدمة تتيح لك اختيار الأعمدة وتحديد المتغيرات حسب ملف"
+    " البيانات الخاص بك."
 )
 
 # ---------------------------------------------------------
@@ -36,6 +36,8 @@ if uploaded_file is not None:
     # عرض جدول البيانات النشط
     st.subheader("📊 جدول البيانات النشط للتحليل:")
     st.dataframe(df, use_container_width=True)
+
+    columns_list = df.columns.tolist()
 
     # ---------------------------------------------------------
     # لوحة التحكم واختيار النماذج
@@ -62,9 +64,23 @@ if uploaded_file is not None:
       # 1. دالة الإنتاج الخطية (OLS)
       if model_choice == "1. دالة الإنتاج الخطية (OLS)":
         st.subheader("📈 نتائج دالة الإنتاج الخطية (OLS)")
-        if {"Water", "Fertilizer", "Yield"}.issubset(df.columns):
-          X = sm.add_constant(df[["Water", "Fertilizer"]])
-          y = df["Yield"]
+        col1, col2 = st.columns(2)
+        with col1:
+          y_col = st.selectbox(
+              "اختر المتغير التابع (الإنتاج / العائد):",
+              columns_list,
+              key="ols_y",
+          )
+        with col2:
+          x_cols = st.multiselect(
+              "اختر المتغيرات المستقلة (المدخلات):",
+              [c for c in columns_list if c != y_col],
+              key="ols_x",
+          )
+
+        if y_col and x_cols:
+          X = sm.add_constant(df[x_cols])
+          y = df[y_col]
           model = sm.OLS(y, X).fit()
           st.text(model.summary().as_text())
 
@@ -74,37 +90,51 @@ if uploaded_file is not None:
           r2 = model.rsquared * 100
           st.success(
               f"• **معامل التحديد ($R^2$):** بلغ {r2:.2f}%، مما يشير إلى أن"
-              " المتغيرات المستقلة (المياه والسماد) تفسر هذه النسبة من التغيرات"
-              " في الإنتاجية."
+              f" المتغيرات المستقلة المحددة تفسر هذه النسبة من التغيرات في"
+              f" المتغير التابع ({y_col})."
           )
           st.info(
               "• **التفسير الاقتصادي:** توضح المعاملات التغير المطلق في الإنتاج"
               " الناتج عن زيادة وحدة واحدة من كل مدخل مع ثبات العوامل الأخرى."
           )
         else:
-          st.error(
-              "يرجى التأكد من وجود أعمدة (Yield, Water, Fertilizer) في الملف"
-              " المرفوع."
+          st.warning(
+              "يرجى اختيار المتغير التابع والمتغيرات المستقلة لإتمام التحليل."
           )
 
       # 2. دالة كوب دوجلاس
       elif model_choice == "2. دالة إنتاج كوب-دوجلاس (Cobb-Douglas)":
         st.subheader("📉 نتائج دالة كوب-دوجلاس اللوغاريتمية (Log-Log Model)")
-        if {"Water", "Fertilizer", "Yield"}.issubset(df.columns):
-          df_log = np.log(df[["Yield", "Water", "Fertilizer"]])
-          X = sm.add_constant(df_log[["Water", "Fertilizer"]])
-          y = df_log["Yield"]
+        col1, col2 = st.columns(2)
+        with col1:
+          y_col = st.selectbox(
+              "اختر المتغير التابع (الإنتاج / العائد):",
+              columns_list,
+              key="cd_y",
+          )
+        with col2:
+          x_cols = st.multiselect(
+              "اختر المتغيرات المستقلة (المدخلات):",
+              [c for c in columns_list if c != y_col],
+              key="cd_x",
+          )
+
+        if y_col and x_cols:
+          df_log = np.log(df[[y_col] + x_cols])
+          X = sm.add_constant(df_log[x_cols])
+          y = df_log[y_col]
           model = sm.OLS(y, X).fit()
           st.text(model.summary().as_text())
 
-          beta_water = model.params["Water"]
-          beta_fert = model.params["Fertilizer"]
-          returns_to_scale = beta_water + beta_fert
+          returns_to_scale = model.params[x_cols].sum()
 
-          col1, col2, col3 = st.columns(3)
-          col1.metric("مرونة المياه", f"{beta_water:.4f}")
-          col2.metric("مرونة السماد", f"{beta_fert:.4f}")
-          col3.metric("إجمالي عوائد الحجم", f"{returns_to_scale:.4f}")
+          st.markdown("### 📊 ملخص المرونات وعوائد الحجم:")
+          cols = st.columns(len(x_cols) + 1)
+          for i, col_name in enumerate(x_cols):
+            cols[i].metric(
+                f"مرونة ({col_name})", f"{model.params[col_name]:.4f}"
+            )
+          cols[-1].metric("إجمالي عوائد الحجم", f"{returns_to_scale:.4f}")
 
           # التقرير التحليلي العربي
           st.markdown("---")
@@ -119,28 +149,36 @@ if uploaded_file is not None:
               )
           )
           st.success(
-              f"• **مرونة الإنتاج:** مرونة المياه تقدر بـ ({beta_water:.4f})"
-              f" ومرونة السماد بـ ({beta_fert:.4f}). تعني المرونة نسبة تغير"
-              " الإنتاج عند تغير المدخل بنسبة 1%."
+              "• **مرونة الإنتاج:** تعبر مروناته عن نسبة تغير الإنتاج عند تغير"
+              " المدخل بنسبة 1%."
           )
           st.info(
               f"• **عوائد الحجم:** إجمالي عوائد الحجم بلغ ({returns_to_scale:.4f})"
               f" وهو ما يدل على أن الإنتاج يمر بحالة **{scale_desc}**."
           )
         else:
-          st.error(
-              "يرجى التأكد من وجود أعمدة (Yield, Water, Fertilizer) في الملف"
-              " المرفوع."
-          )
+          st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
       # 3. دالة الإنتاج التربيعية
       elif model_choice == "3. دالة الإنتاج التربيعية (Quadratic)":
         st.subheader("📐 نتائج دالة الإنتاج التربيعية (لقياس تناقص الغلة)")
-        if {"Water", "Yield"}.issubset(df.columns):
+        col1, col2 = st.columns(2)
+        with col1:
+          y_col = st.selectbox(
+              "اختر المتغير التابع (الإنتاج):", columns_list, key="q_y"
+          )
+        with col2:
+          x_col = st.selectbox(
+              "اختر المتغير المراد اختبار تناقص غلته:",
+              [c for c in columns_list if c != y_col],
+              key="q_x",
+          )
+
+        if y_col and x_col:
           df_quad = df.copy()
-          df_quad["Water_sq"] = df_quad["Water"] ** 2
-          X = sm.add_constant(df_quad[["Water", "Water_sq"]])
-          y = df_quad["Yield"]
+          df_quad["X_sq"] = df_quad[x_col] ** 2
+          X = sm.add_constant(df_quad[[x_col, "X_sq"]])
+          y = df_quad[y_col]
           model = sm.OLS(y, X).fit()
           st.text(model.summary().as_text())
 
@@ -148,47 +186,50 @@ if uploaded_file is not None:
           st.markdown("---")
           st.markdown("### 📝 التقرير التحليلي باللغة العربية")
           st.success(
-              "• **قانون تناقص الغلة:** إشارة المعامل التربيعي السالب للمدخل تدل"
-              " على صحة قانون تناقص الغلة، حيث يبدأ العائد الحدي في التناقص"
-              " مع التوسع المستمر في استخدام المدخل."
+              "• **قانون تناقص الغلة:** إشارة المعامل التربيعي تدل على طبيعة"
+              " العلاقة، حيث يؤكد الحد التربيعي السالب تناقص الغلة بعد حد"
+              " معين."
           )
         else:
-          st.error(
-              "يرجى التأكد من وجود أعمدة (Yield, Water) في الملف المرفوع."
-          )
+          st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
       # 4. تحليل الاتجاه العام
       elif model_choice == "4. تحليل الاتجاه العام (Trend Analysis)":
         st.subheader("📅 تحليل الاتجاه العام للمتغيرات عبر الزمن")
-        if "Year" in df.columns:
-          numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-          numeric_cols.remove("Year")
-
+        col1, col2 = st.columns(2)
+        with col1:
+          year_col = st.selectbox(
+              "اختر عمود الزمن أو السنوات:", columns_list, key="t_yr"
+          )
+        with col2:
           target_var = st.selectbox(
-              "اختر المتغير المراد دراسة اتجاهه العام:", numeric_cols
+              "اختر المتغير المراد دراسة اتجاهه العام:",
+              [c for c in columns_list if c != year_col],
+              key="t_var",
           )
 
-          X_trend = sm.add_constant(df["Year"])
+        if year_col and target_var:
+          X_trend = sm.add_constant(df[year_col])
           y_trend = df[target_var]
           trend_model = sm.OLS(y_trend, X_trend).fit()
           st.text(trend_model.summary().as_text())
 
           st.write(
-              f"**رسم بياني يوضح مسار واتجاه ({target_var}) عبر السنوات:**"
+              f"**رسم بياني يوضح مسار واتجاه ({target_var}) عبر الزمن:**"
           )
           chart_data = pd.DataFrame(
               {
                   "القيم الفعلية": df[target_var],
                   "خط الاتجاه العام": trend_model.fittedvalues,
               },
-              index=df["Year"],
+              index=df[year_col],
           )
           st.line_chart(chart_data)
 
           # التقرير التحليلي العربي
           st.markdown("---")
           st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          slope = trend_model.params["Year"]
+          slope = trend_model.params[year_col]
           direction = (
               "تصاعدي (موجب)" if slope > 0 else "تنازلي (سالب)"
           )
@@ -198,10 +239,7 @@ if uploaded_file is not None:
               " فترة الدراسة."
           )
         else:
-          st.error(
-              "الرجاء التأكد من وجود عمود باسم (Year) في الملف لتمكين تحليل"
-              " الاتجاه العام."
-          )
+          st.warning("يرجى اختيار عمود الزمن والمتغير المستهدف.")
 
       # 5. تحليل الكفاءة DEA
       elif model_choice == (
@@ -212,9 +250,21 @@ if uploaded_file is not None:
             "📐 تحليل الكفاءة الفنية باستخدام مغلف البيانات (DEA - Input-Oriented"
             " CCR)"
         )
-        if {"Water", "Fertilizer", "Yield"}.issubset(df.columns):
-          inputs = df[["Water", "Fertilizer"]].values
-          outputs = df["Yield"].values
+        col1, col2 = st.columns(2)
+        with col1:
+          y_col = st.selectbox(
+              "اختر متغير المخرج (الإنتاج):", columns_list, key="dea_y"
+          )
+        with col2:
+          x_cols = st.multiselect(
+              "اختر متغيرات المدخلات:",
+              [c for c in columns_list if c != y_col],
+              key="dea_x",
+          )
+
+        if y_col and x_cols:
+          inputs = df[x_cols].values
+          outputs = df[y_col].values
           n_dmu = len(df)
           X_mat = inputs.T
           Y_mat = outputs.reshape(1, n_dmu)
@@ -254,24 +304,35 @@ if uploaded_file is not None:
               " تعتبر كفؤة وتقع على حد الإنتاج الأمثل."
           )
         else:
-          st.error(
-              "يرجى التأكد من توفر أعمدة المدخلات والمخرجات المطلوبة (Yield,"
-              " Water, Fertilizer)."
-          )
+          st.warning("يرجى اختيار المخرج والمدخلات المطلوبة.")
 
       # 6. الهوامش التسويقية
       elif model_choice == "6. حساب الهوامش التسويقية (Marketing Margins)":
         st.subheader("💰 تحليل الهوامش التسويقية ونصيب المزارع")
-        if "Farm_Price" in df.columns and "Retail_Price" in df.columns:
+        col1, col2 = st.columns(2)
+        with col1:
+          farm_col = st.selectbox(
+              "اختر عمود سعر المزرعة (Farm Price):",
+              columns_list,
+              key="m_farm",
+          )
+        with col2:
+          retail_col = st.selectbox(
+              "اختر عمود سعر التجزئة / المستهلك (Retail Price):",
+              columns_list,
+              key="m_retail",
+          )
+
+        if farm_col and retail_col:
           df_margin = df.copy()
           df_margin["Absolute_Margin"] = (
-              df_margin["Retail_Price"] - df_margin["Farm_Price"]
+              df_margin[retail_col] - df_margin[farm_col]
           )
           df_margin["Percentage_Margin (%)"] = (
-              df_margin["Absolute_Margin"] / df_margin["Retail_Price"]
+              df_margin["Absolute_Margin"] / df_margin[retail_col]
           ) * 100
           df_margin["Farmer_Share (%)"] = (
-              df_margin["Farm_Price"] / df_margin["Retail_Price"]
+              df_margin[farm_col] / df_margin[retail_col]
           ) * 100
 
           st.dataframe(df_margin, use_container_width=True)
@@ -299,10 +360,7 @@ if uploaded_file is not None:
               " الأرباح التسويقية."
           )
         else:
-          st.error(
-              "يرجى التأكد من وجود أعمدة الأسعار (Farm_Price) و (Retail_Price)"
-              " في الملف المرفوع."
-          )
+          st.warning("يرجى اختيار أعمدة أسعار المزرعة والتجزئة.")
 
       # 7. تحليل حد الإنتاج القياسي (Frontier)
       elif model_choice == (
@@ -311,10 +369,22 @@ if uploaded_file is not None:
         st.subheader(
             "⚡ تحليل حد الإنتاج وتقدير الكفاءة الفنية (Corrected OLS Frontier)"
         )
-        if {"Water", "Fertilizer", "Yield"}.issubset(df.columns):
-          df_log = np.log(df[["Yield", "Water", "Fertilizer"]])
-          X = sm.add_constant(df_log[["Water", "Fertilizer"]])
-          y = df_log["Yield"]
+        col1, col2 = st.columns(2)
+        with col1:
+          y_col = st.selectbox(
+              "اختر المتغير التابع (الإنتاج):", columns_list, key="f_y"
+          )
+        with col2:
+          x_cols = st.multiselect(
+              "اختر المتغيرات المستقلة (المدخلات):",
+              [c for c in columns_list if c != y_col],
+              key="f_x",
+          )
+
+        if y_col and x_cols:
+          df_log = np.log(df[[y_col] + x_cols])
+          X = sm.add_constant(df_log[x_cols])
+          y = df_log[y_col]
           model = sm.OLS(y, X).fit()
 
           residuals = model.resid
@@ -349,14 +419,12 @@ if uploaded_file is not None:
               " مقارنة بالوحدة المعيارية المثلى على الحدود."
           )
         else:
-          st.error(
-              "يرجى التأكد من توفر أعمدة (Yield, Water, Fertilizer) في الملف."
-          )
+          st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
   except Exception as e:
     st.error(f"حدث خطأ أثناء قراءة أو معالجة الملف: {e}")
 else:
   st.info(
       "👈 يرجى رفع ملف البيانات الخاص بك (Excel أو CSV) من القائمة الجانبية لبدء"
-      " عرض الجدول وتشغيل النماذج والتقارير."
-  ) 
+      " اختيار الأعمدة وتطبيق النماذج."
+  )
