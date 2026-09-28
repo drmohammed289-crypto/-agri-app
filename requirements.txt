@@ -6,3 +6,4 @@ statsmodels
 matplotlib
 requests
 duckduckgo-search
+arch
