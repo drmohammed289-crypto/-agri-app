@@ -13,8 +13,8 @@ st.set_page_config(
 
 st.title("🌾 منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي الشاملة")
 st.write(
-    "منصة بحثية متقدمة تتيح لك اختيار الأعمدة وتحديد المتغيرات حسب ملف"
-    " البيانات الخاص بك."
+    "منصة بحثية متقدمة تتيح لك اختيار الأعمدة وتحديد المتغيرات وتحليل البيانات"
+    " بدقة."
 )
 
 # ---------------------------------------------------------
@@ -79,24 +79,41 @@ if uploaded_file is not None:
           )
 
         if y_col and x_cols:
-          X = sm.add_constant(df[x_cols])
-          y = df[y_col]
-          model = sm.OLS(y, X).fit()
-          st.text(model.summary().as_text())
+          try:
+            temp_df = df[[y_col] + x_cols].apply(
+                pd.to_numeric, errors="coerce"
+            )
+            temp_df = temp_df.dropna()
 
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          r2 = model.rsquared * 100
-          st.success(
-              f"• **معامل التحديد ($R^2$):** بلغ {r2:.2f}%، مما يشير إلى أن"
-              f" المتغيرات المستقلة المحددة تفسر هذه النسبة من التغيرات في"
-              f" المتغير التابع ({y_col})."
-          )
-          st.info(
-              "• **التفسير الاقتصادي:** توضح المعاملات التغير المطلق في الإنتاج"
-              " الناتج عن زيادة وحدة واحدة من كل مدخل مع ثبات العوامل الأخرى."
-          )
+            if len(temp_df) < 3:
+              st.error(
+                  "عدد البيانات الصالحة بعد استبعاد القيم غير الرقمية غير كافٍ"
+                  " لإجراء التحليل."
+              )
+            else:
+              y = temp_df[y_col]
+              X = sm.add_constant(temp_df[x_cols])
+              model = sm.OLS(y, X).fit()
+              st.text(model.summary().as_text())
+
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              r2 = model.rsquared * 100
+              st.success(
+                  f"• **معامل التحديد ($R^2$):** بلغ {r2:.2f}%، مما يشير إلى أن"
+                  f" المتغيرات المستقلة المحددة تفسر هذه النسبة من التغيرات في"
+                  f" المتغير التابع ({y_col})."
+              )
+              st.info(
+                  "• **التفسير الاقتصادي:** توضح المعاملات التغير المطلق في الإنتاج"
+                  " الناتج عن زيادة وحدة واحدة من كل مدخل مع ثبات العوامل الأخرى."
+              )
+          except Exception as ex:
+            st.error(
+                f"حدث خطأ أثناء تنفيذ نموذج OLS (تأكد من أن البيانات رقمية):"
+                f" {ex}"
+            )
         else:
           st.warning(
               "يرجى اختيار المتغير التابع والمتغيرات المستقلة لإتمام التحليل."
@@ -120,42 +137,61 @@ if uploaded_file is not None:
           )
 
         if y_col and x_cols:
-          df_log = np.log(df[[y_col] + x_cols])
-          X = sm.add_constant(df_log[x_cols])
-          y = df_log[y_col]
-          model = sm.OLS(y, X).fit()
-          st.text(model.summary().as_text())
-
-          returns_to_scale = model.params[x_cols].sum()
-
-          st.markdown("### 📊 ملخص المرونات وعوائد الحجم:")
-          cols = st.columns(len(x_cols) + 1)
-          for i, col_name in enumerate(x_cols):
-            cols[i].metric(
-                f"مرونة ({col_name})", f"{model.params[col_name]:.4f}"
+          try:
+            temp_df = df[[y_col] + x_cols].apply(
+                pd.to_numeric, errors="coerce"
             )
-          cols[-1].metric("إجمالي عوائد الحجم", f"{returns_to_scale:.4f}")
-
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          scale_desc = (
-              "متزايدة (Increasing)"
-              if returns_to_scale > 1
-              else (
-                  "ثابتة (Constant)"
-                  if abs(returns_to_scale - 1) < 0.001
-                  else "متناقصة (Decreasing)"
+            temp_df = temp_df.dropna()
+            if (temp_df <= 0).any().any():
+              st.warning(
+                  "تنبيه: توجد قيم تساوي صفر أو سالبة، وتم استبعادها لأخذ"
+                  " اللوغاريتم."
               )
-          )
-          st.success(
-              "• **مرونة الإنتاج:** تعبر مروناته عن نسبة تغير الإنتاج عند تغير"
-              " المدخل بنسبة 1%."
-          )
-          st.info(
-              f"• **عوائد الحجم:** إجمالي عوائد الحجم بلغ ({returns_to_scale:.4f})"
-              f" وهو ما يدل على أن الإنتاج يمر بحالة **{scale_desc}**."
-          )
+              temp_df = temp_df[(temp_df > 0).all(axis=1)]
+
+            if len(temp_df) < 3:
+              st.error(
+                  "البيانات الصالحة بعد تطبيق اللوغاريتم غير كافية للتحليل."
+              )
+            else:
+              df_log = np.log(temp_df)
+              X = sm.add_constant(df_log[x_cols])
+              y = df_log[y_col]
+              model = sm.OLS(y, X).fit()
+              st.text(model.summary().as_text())
+
+              returns_to_scale = model.params[x_cols].sum()
+
+              st.markdown("### 📊 ملخص المرونات وعوائد الحجم:")
+              cols = st.columns(len(x_cols) + 1)
+              for i, col_name in enumerate(x_cols):
+                cols[i].metric(
+                    f"مرونة ({col_name})", f"{model.params[col_name]:.4f}"
+                )
+              cols[-1].metric("إجمالي عوائد الحجم", f"{returns_to_scale:.4f}")
+
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              scale_desc = (
+                  "متزايدة (Increasing)"
+                  if returns_to_scale > 1
+                  else (
+                      "ثابتة (Constant)"
+                      if abs(returns_to_scale - 1) < 0.001
+                      else "متناقصة (Decreasing)"
+                  )
+              )
+              st.success(
+                  "• **مرونة الإنتاج:** تعبر مروناته عن نسبة تغير الإنتاج عند"
+                  " تغير المدخل بنسبة 1%."
+              )
+              st.info(
+                  f"• **عوائد الحجم:** إجمالي عوائد الحجم بلغ ({returns_to_scale:.4f})"
+                  f" وهو ما يدل على أن الإنتاج يمر بحالة **{scale_desc}**."
+              )
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء تنفيذ نموذج كوب-دوجلاس: {ex}")
         else:
           st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
@@ -175,21 +211,30 @@ if uploaded_file is not None:
           )
 
         if y_col and x_col:
-          df_quad = df.copy()
-          df_quad["X_sq"] = df_quad[x_col] ** 2
-          X = sm.add_constant(df_quad[[x_col, "X_sq"]])
-          y = df_quad[y_col]
-          model = sm.OLS(y, X).fit()
-          st.text(model.summary().as_text())
+          try:
+            temp_df = df[[y_col, x_col]].apply(
+                pd.to_numeric, errors="coerce"
+            )
+            temp_df = temp_df.dropna()
+            if len(temp_df) < 3:
+              st.error("البيانات الصالحة غير كافية.")
+            else:
+              temp_df["X_sq"] = temp_df[x_col] ** 2
+              X = sm.add_constant(temp_df[[x_col, "X_sq"]])
+              y = temp_df[y_col]
+              model = sm.OLS(y, X).fit()
+              st.text(model.summary().as_text())
 
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          st.success(
-              "• **قانون تناقص الغلة:** إشارة المعامل التربيعي تدل على طبيعة"
-              " العلاقة، حيث يؤكد الحد التربيعي السالب تناقص الغلة بعد حد"
-              " معين."
-          )
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              st.success(
+                  "• **قانون تناقص الغلة:** إشارة المعامل التربيعي تدل على طبيعة"
+                  " العلاقة، حيث يؤكد الحد التربيعي السالب تناقص الغلة بعد حد"
+                  " معين."
+              )
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء تنفيذ النموذج التربيعي: {ex}")
         else:
           st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
@@ -209,35 +254,45 @@ if uploaded_file is not None:
           )
 
         if year_col and target_var:
-          X_trend = sm.add_constant(df[year_col])
-          y_trend = df[target_var]
-          trend_model = sm.OLS(y_trend, X_trend).fit()
-          st.text(trend_model.summary().as_text())
+          try:
+            temp_df = df[[year_col, target_var]].apply(
+                pd.to_numeric, errors="coerce"
+            )
+            temp_df = temp_df.dropna()
+            if len(temp_df) < 3:
+              st.error("البيانات الصالحة غير كافية.")
+            else:
+              X_trend = sm.add_constant(temp_df[year_col])
+              y_trend = temp_df[target_var]
+              trend_model = sm.OLS(y_trend, X_trend).fit()
+              st.text(trend_model.summary().as_text())
 
-          st.write(
-              f"**رسم بياني يوضح مسار واتجاه ({target_var}) عبر الزمن:**"
-          )
-          chart_data = pd.DataFrame(
-              {
-                  "القيم الفعلية": df[target_var],
-                  "خط الاتجاه العام": trend_model.fittedvalues,
-              },
-              index=df[year_col],
-          )
-          st.line_chart(chart_data)
+              st.write(
+                  f"**رسم بياني يوضح مسار واتجاه ({target_var}) عبر الزمن:**"
+              )
+              chart_data = pd.DataFrame(
+                  {
+                      "القيم الفعلية": temp_df[target_var],
+                      "خط الاتجاه العام": trend_model.fittedvalues,
+                  },
+                  index=temp_df[year_col],
+              )
+              st.line_chart(chart_data)
 
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          slope = trend_model.params[year_col]
-          direction = (
-              "تصاعدي (موجب)" if slope > 0 else "تنازلي (سالب)"
-          )
-          st.success(
-              f"• **معدل التغير السنوي:** الميل الزمني للمتغير ({target_var})"
-              f" بلغ ({slope:.4f}) سنوياً، وهو اتجاه عام **{direction}** خلال"
-              " فترة الدراسة."
-          )
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              slope = trend_model.params[year_col]
+              direction = (
+                  "تصاعدي (موجب)" if slope > 0 else "تنازلي (سالب)"
+              )
+              st.success(
+                  f"• **معدل التغير السنوي:** الميل الزمني للمتغير ({target_var})"
+                  f" بلغ ({slope:.4f}) سنوياً، وهو اتجاه عام **{direction}** خلال"
+                  " فترة الدراسة."
+              )
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء تحليل الاتجاه العام: {ex}")
         else:
           st.warning("يرجى اختيار عمود الزمن والمتغير المستهدف.")
 
@@ -263,46 +318,55 @@ if uploaded_file is not None:
           )
 
         if y_col and x_cols:
-          inputs = df[x_cols].values
-          outputs = df[y_col].values
-          n_dmu = len(df)
-          X_mat = inputs.T
-          Y_mat = outputs.reshape(1, n_dmu)
-
-          eff_list = []
-          for k in range(n_dmu):
-            x_k = inputs[k]
-            y_k = outputs[k]
-            c_lp = np.array([1.0] + [0.0] * n_dmu)
-            A_inputs = np.column_stack((-x_k, X_mat))
-            b_inputs = np.zeros(X_mat.shape[0])
-            A_outputs = np.column_stack((np.zeros(Y_mat.shape[0]), -Y_mat))
-            b_outputs = np.array([-y_k])
-            A_ub = np.vstack((A_inputs, A_outputs))
-            b_ub = np.concatenate((b_inputs, b_outputs))
-            bounds = [(0, None)] + [(0, None)] * n_dmu
-
-            res = linprog(
-                c_lp, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method="highs"
+          try:
+            temp_df = df[[y_col] + x_cols].apply(
+                pd.to_numeric, errors="coerce"
             )
-            if res.success:
-              eff_list.append(res.x[0])
+            temp_df = temp_df.dropna()
+            if len(temp_df) < 3:
+              st.error("البيانات غير كافية أو غير رقمية.")
             else:
-              eff_list.append(np.nan)
+              inputs = temp_df[x_cols].values
+              outputs = temp_df[y_col].values
+              n_dmu = len(temp_df)
+              X_mat = inputs.T
+              Y_mat = outputs.reshape(1, n_dmu)
 
-          df_dea = df.copy()
-          df_dea["Technical_Efficiency (DEA)"] = eff_list
-          st.dataframe(df_dea, use_container_width=True)
+              eff_list = []
+              for k in range(n_dmu):
+                x_k = inputs[k]
+                y_k = outputs[k]
+                c_lp = np.array([1.0] + [0.0] * n_dmu)
+                A_inputs = np.column_stack((-x_k, X_mat))
+                b_inputs = np.zeros(X_mat.shape[0])
+                A_outputs = np.column_stack((np.zeros(Y_mat.shape[0]), -Y_mat))
+                b_outputs = np.array([-y_k])
+                A_ub = np.vstack((A_inputs, A_outputs))
+                b_ub = np.concatenate((b_inputs, b_outputs))
+                bounds = [(0, None)] + [(0, None)] * n_dmu
 
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          avg_eff = np.nanmean(eff_list) * 100
-          st.success(
-              f"• **متوسط الكفاءة الفنية:** بلغ متوسط الكفاءة الفنية للعينة"
-              f" ({avg_eff:.2f}%). الوحدات التي تصل كفاءتها إلى 1.0 (أو 100%)"
-              " تعتبر كفؤة وتقع على حد الإنتاج الأمثل."
-          )
+                res = linprog(
+                    c_lp, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method="highs"
+                )
+                if res.success:
+                  eff_list.append(res.x[0])
+                else:
+                  eff_list.append(np.nan)
+
+              temp_df["Technical_Efficiency (DEA)"] = eff_list
+              st.dataframe(temp_df, use_container_width=True)
+
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              avg_eff = np.nanmean(eff_list) * 100
+              st.success(
+                  f"• **متوسط الكفاءة الفنية:** بلغ متوسط الكفاءة الفنية للعينة"
+                  f" ({avg_eff:.2f}%). الوحدات التي تصل كفاءتها إلى 1.0 (أو 100%)"
+                  " تعتبر كفؤة وتقع على حد الإنتاج الأمثل."
+              )
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء تحليل DEA: {ex}")
         else:
           st.warning("يرجى اختيار المخرج والمدخلات المطلوبة.")
 
@@ -324,41 +388,50 @@ if uploaded_file is not None:
           )
 
         if farm_col and retail_col:
-          df_margin = df.copy()
-          df_margin["Absolute_Margin"] = (
-              df_margin[retail_col] - df_margin[farm_col]
-          )
-          df_margin["Percentage_Margin (%)"] = (
-              df_margin["Absolute_Margin"] / df_margin[retail_col]
-          ) * 100
-          df_margin["Farmer_Share (%)"] = (
-              df_margin[farm_col] / df_margin[retail_col]
-          ) * 100
+          try:
+            temp_df = df[[farm_col, retail_col]].apply(
+                pd.to_numeric, errors="coerce"
+            )
+            temp_df = temp_df.dropna()
+            if len(temp_df) < 1:
+              st.error("البيانات غير كافية أو غير رقمية.")
+            else:
+              temp_df["Absolute_Margin"] = (
+                  temp_df[retail_col] - temp_df[farm_col]
+              )
+              temp_df["Percentage_Margin (%)"] = (
+                  temp_df["Absolute_Margin"] / temp_df[retail_col]
+              ) * 100
+              temp_df["Farmer_Share (%)"] = (
+                  temp_df[farm_col] / temp_df[retail_col]
+              ) * 100
 
-          st.dataframe(df_margin, use_container_width=True)
+              st.dataframe(temp_df, use_container_width=True)
 
-          avg_abs = df_margin["Absolute_Margin"].mean()
-          avg_pct = df_margin["Percentage_Margin (%)"].mean()
-          avg_share = df_margin["Farmer_Share (%)"].mean()
+              avg_abs = temp_df["Absolute_Margin"].mean()
+              avg_pct = temp_df["Percentage_Margin (%)"].mean()
+              avg_share = temp_df["Farmer_Share (%)"].mean()
 
-          col1, col2, col3 = st.columns(3)
-          col1.metric("متوسط الهامش المطلق", f"{avg_abs:.2f}")
-          col2.metric("متوسط الهامش النسبي", f"{avg_pct:.2f}%")
-          col3.metric("متوسط نصيب المزارع", f"{avg_share:.2f}%")
+              col1, col2, col3 = st.columns(3)
+              col1.metric("متوسط الهامش المطلق", f"{avg_abs:.2f}")
+              col2.metric("متوسط الهامش النسبي", f"{avg_pct:.2f}%")
+              col3.metric("متوسط نصيب المزارع", f"{avg_share:.2f}%")
 
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          st.success(
-              f"• **تحليل الكفاءة التسويقية:** بلغ متوسط الهامش المطلق"
-              f" ({avg_abs:.2f}) ومتوسط الهامش النسبي ({avg_pct:.2f}%)."
-          )
-          st.info(
-              f"• **نصيب المزارع:** يحصل المزارع في المتوسط على"
-              f" ({avg_share:.2f}%) من السعر النهائي المدفوع من المستهلك،"
-              " وكلما زادت هذه النسبة دل ذلك على كفاءة وكبر نصيب المنتج من"
-              " الأرباح التسويقية."
-          )
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              st.success(
+                  f"• **تحليل الكفاءة التسويقية:** بلغ متوسط الهامش المطلق"
+                  f" ({avg_abs:.2f}) ومتوسط الهامش النسبي ({avg_pct:.2f}%)."
+              )
+              st.info(
+                  f"• **نصيب المزارع:** يحصل المزارع في المتوسط على"
+                  f" ({avg_share:.2f}%) من السعر النهائي المدفوع من المستهلك،"
+                  " وكلما زادت هذه النسبة دل ذلك على كفاءة وكبر نصيب المنتج من"
+                  " الأرباح التسويقية."
+              )
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء حساب الهوامش التسويقية: {ex}")
         else:
           st.warning("يرجى اختيار أعمدة أسعار المزرعة والتجزئة.")
 
@@ -382,42 +455,54 @@ if uploaded_file is not None:
           )
 
         if y_col and x_cols:
-          df_log = np.log(df[[y_col] + x_cols])
-          X = sm.add_constant(df_log[x_cols])
-          y = df_log[y_col]
-          model = sm.OLS(y, X).fit()
+          try:
+            temp_df = df[[y_col] + x_cols].apply(
+                pd.to_numeric, errors="coerce"
+            )
+            temp_df = temp_df.dropna()
+            if (temp_df <= 0).any().any():
+              temp_df = temp_df[(temp_df > 0).all(axis=1)]
 
-          residuals = model.resid
-          max_resid = residuals.max()
-          te = np.exp(residuals - max_resid)
+            if len(temp_df) < 3:
+              st.error("البيانات الصالحة غير كافية للتحليل.")
+            else:
+              df_log = np.log(temp_df)
+              X = sm.add_constant(df_log[x_cols])
+              y = df_log[y_col]
+              model = sm.OLS(y, X).fit()
 
-          df_frontier = df.copy()
-          df_frontier["Predicted_Yield_Frontier"] = np.exp(
-              model.fittedvalues + max_resid
-          )
-          df_frontier["Technical_Efficiency"] = te
+              residuals = model.resid
+              max_resid = residuals.max()
+              te = np.exp(residuals - max_resid)
 
-          st.text(model.summary().as_text())
-          st.markdown("### 📋 جدول الكفاءة الفنية وحد الإنتاج:")
-          st.dataframe(df_frontier, use_container_width=True)
+              temp_df["Predicted_Yield_Frontier"] = np.exp(
+                  model.fittedvalues + max_resid
+              )
+              temp_df["Technical_Efficiency"] = te
 
-          avg_te = te.mean()
-          st.metric(
-              "متوسط الكفاءة الفنية على حد الإنتاج", f"{avg_te * 100:.2f}%"
-          )
+              st.text(model.summary().as_text())
+              st.markdown("### 📋 جدول الكفاءة الفنية وحد الإنتاج:")
+              st.dataframe(temp_df, use_container_width=True)
 
-          # التقرير التحليلي العربي
-          st.markdown("---")
-          st.markdown("### 📝 التقرير التحليلي باللغة العربية")
-          st.success(
-              f"• **كفاءة حدود الإنتاج:** بلغ متوسط الكفاءة الفنية وفقاً لنموذج"
-              f" حدود الإنتاج المصحح (COLS) نحو ({avg_te * 100:.2f}%)."
-          )
-          st.info(
-              "• **الاستنتاج:** تعكس درجات الكفاءة مدى قدرة الوحدات الإنتاجية"
-              " على تعظيم الإنتاج باستخدام نفس القدر المتاح من المدخلات"
-              " مقارنة بالوحدة المعيارية المثلى على الحدود."
-          )
+              avg_te = te.mean()
+              st.metric(
+                  "متوسط الكفاءة الفنية على حد الإنتاج", f"{avg_te * 100:.2f}%"
+              )
+
+              # التقرير التحليلي العربي
+              st.markdown("---")
+              st.markdown("### 📝 التقرير التحليلي باللغة العربية")
+              st.success(
+                  f"• **كفاءة حدود الإنتاج:** بلغ متوسط الكفاءة الفنية وفقاً لنموذج"
+                  f" حدود الإنتاج المصحح (COLS) نحو ({avg_te * 100:.2f}%)."
+              )
+              st.info(
+                  "• **الاستنتاج:** تعكس درجات الكفاءة مدى قدرة الوحدات الإنتاجية"
+                  " على تعظيم الإنتاج باستخدام نفس القدر المتاح من المدخلات"
+                  " مقارنة بالوحدة المعيارية المثلى على الحدود."
+              )
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء تنفيذ تحليل الحدود: {ex}")
         else:
           st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
