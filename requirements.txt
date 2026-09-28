@@ -5,4 +5,4 @@ scipy
 statsmodels
 matplotlib
 requests
-google-generativeai
+duckduckgo-search
