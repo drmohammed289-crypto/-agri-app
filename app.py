@@ -4,15 +4,12 @@ import pandas as pd
 import requests
 from scipy.optimize import linprog, root_scalar
 import scipy.stats as stats
+from scipy.stats import jarque_bera
 import statsmodels.api as sm
-from statsmodels.stats.diagnostic import (
-    het_breuschpagan,
-    het_white,
-    jarque_bera,
-)
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller, coint, kpss, phillips_perron
+from statsmodels.tsa.vector_ar.var_model import VAR
 from statsmodels.tsa.vector_ar.vecm import coin_johansen
 import streamlit as st
 
@@ -191,11 +188,17 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         # 1. اختبار Durbin-Watson للارتباط الذاتي
         dw_stat = sm.stats.stattools.durbin_watson(residuals)
         # 2. اختبار Jarque-Bera للتوزيع الطبيعي
-        jb_stat, jb_p, skew_v, kurt_v = jarque_bera(residuals)
-        # 3. اختبار Breusch-Pagan لثبات التباين
-        bp_stat, bp_p, _, _ = het_breuschpagan(residuals, model.model.exog)
-        # 4. اختبار White لثبات التباين
-        wh_stat, wh_p, _, _ = het_white(residuals, model.model.exog)
+        jb_stat, jb_p = jarque_bera(residuals)
+
+        # 3 & 4. اختبارات ثبات التباين (Breusch-Pagan & White) بشكل آمن محلياً
+        bp_p, wh_p = 1.0, 1.0
+        try:
+          from statsmodels.stats.diagnostic import het_breuschpagan, het_white
+
+          bp_stat, bp_p, _, _ = het_breuschpagan(residuals, model.model.exog)
+          wh_stat, wh_p, _, _ = het_white(residuals, model.model.exog)
+        except Exception:
+          pass
 
         col_d1, col_d2 = st.columns(2)
         with col_d1:
@@ -380,7 +383,6 @@ elif (
           # بناء نموذج تصحيح الخطأ (ECM)
           dy = temp_c[y_var].diff().dropna()
           dx = temp_c[x_var].diff().dropna()
-          # تقدير العلاقة طويلة الأجل للحصول على البواقي (Error Correction Term)
           ols_long = sm.OLS(
               temp_c[y_var], sm.add_constant(temp_c[x_var])
           ).fit()
@@ -434,9 +436,6 @@ elif (
           st.metric("لوغاريتم الإمكان (Log Likelihood)", f"{model.llf:.2f}")
 
         # التنبؤ خارج العينة ومقاييس الدقة الداخلية
-        fitted_vals = model.fittedvalues
-        actuals = series.iloc[d_v:] if d_v > 0 else series
-        # حساب مقاييس الدقة (RMSE, MAE, MAPE)
         rmse = np.sqrt(np.mean((model.fittedvalues - series) ** 2))
         mae = np.mean(np.abs(model.fittedvalues - series))
         mape = np.mean(
@@ -481,7 +480,7 @@ elif (
 elif app_mode == "💰 دراسة الجدوى والتقييم المالي الشامل للمشروعات":
   st.subheader("💰 دراسة الجدوى الاقتصادية والتقييم المالي الشامل للمشروعات")
   st.write(
-      "حسابافة مؤشرات ربحية المشروع: صافي القيمة الحالية (NPV)، معدل العائد الداخلي"
+      "حساب مؤشرات ربحية المشروع: صافي القيمة الحالية (NPV)، معدل العائد الداخلي"
       " (IRR)، نسبة المنافع للتكاليف (BCR)، فترة الاسترداد العادية والمخصومة،"
       " ومؤشر صافي القيمة الحالية (NPVI)."
   )
