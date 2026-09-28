@@ -8,7 +8,7 @@ from scipy.stats import jarque_bera
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.stattools import adfuller, coint, kpss, phillips_perron
+from statsmodels.tsa.stattools import adfuller, coint, kpss  # تم تصحيح الاستيراد هنا
 from statsmodels.tsa.vector_ar.var_model import VAR
 from statsmodels.tsa.vector_ar.vecm import coin_johansen
 import streamlit as st
@@ -190,7 +190,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         # 2. اختبار Jarque-Bera للتوزيع الطبيعي
         jb_stat, jb_p = jarque_bera(residuals)
 
-        # 3 & 4. اختبارات ثبات التباين (Breusch-Pagan & White) بشكل آمن محلياً
+        # 3 & 4. اختبارات ثبات التباين (Breusch-Pagan & White) بشكل آمن
         bp_p, wh_p = 1.0, 1.0
         try:
           from statsmodels.stats.diagnostic import het_breuschpagan, het_white
@@ -323,9 +323,16 @@ elif (
             "### 2️⃣ اختبار فيليبس-بيرون (Phillips-Perron Test - PP)"
         )
         try:
-          pp_res = phillips_perron(s_data)
-          st.write(f"- **PP Statistic:** `{pp_res[0]:.4f}`")
-          st.write(f"- **p-value:** `{pp_res[1]:.4f}`")
+          from arch.unitroot import PhillipsPerron
+
+          pp = PhillipsPerron(s_data)
+          st.write(f"- **PP Statistic:** `{pp.stat:.4f}`")
+          st.write(f"- **p-value:** `{pp.pvalue:.4f}`")
+        except ImportError:
+          st.info(
+              "ℹ️ اختبار Phillips-Perron يعتمد على مكتبة `arch`. يرجى إضافتها إلى"
+              " ملف `requirements.txt` في مستودعك لتمكين هذا الاختبار."
+          )
         except Exception as e:
           st.info(f"ملاحظة في اختبار PP: {e}")
 
