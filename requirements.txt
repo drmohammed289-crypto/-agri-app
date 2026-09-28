@@ -1,4 +1,6 @@
 streamlit
 pandas
+numpy
 statsmodels
-google-genai
+scipy
+openpyxl
