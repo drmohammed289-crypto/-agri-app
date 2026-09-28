@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
@@ -8,7 +9,7 @@ import streamlit as st
 
 # إعدادات صفحة التطبيق
 st.set_page_config(
-    page_title="منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي الشاملة",
+    page_title="منصة الخبير الاقتصادي والقياسي الذكي",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -58,20 +59,20 @@ if not check_password():
 # ---------------------------------------------------------
 # 🚀 واجهة التطبيق الرئيسية
 # ---------------------------------------------------------
-st.title("🌾 منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي الشاملة")
+st.title("🌾 منصة الخبير الاقتصادي والقياسي الذكي")
 st.write(
-    "منصة بحثية متكاملة للتحليلات القياسية، الإحصاء الوصفي، الاستشارات"
-    " التخصصية، وجلب بيانات البنك الدولي والفاو."
+    "منصة بحثية واحترافية متكاملة للتحليلات القياسية، الإحصاء الوصفي،"
+    " الاستشارات الاقتصادية المتقدمة، وجلب البيانات الموثقة."
 )
 
-# القائمة الجانبية لتحديد أقسام المنصة
+# القائمة الجانبية لتحديد أقسام المنصة (تم فصل الأقسام بوضوح)
 st.sidebar.header("⚙️ إعدادات المنصة")
 app_mode = st.sidebar.radio(
     "اختر قسم العمل الأساسي:",
     [
         "📊 تحليل البيانات والنماذج القياسية",
+        "🌐 بوابة جمع البيانات والمؤشرات",
         "👨‍🏫 المستشار الاقتصادي والقياسي",
-        "🌐 بوابة بيانات البنك الدولي والفاو",
     ],
 )
 
@@ -162,6 +163,10 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
                 [c for c in ordered_cols if c in stats_df.columns]
             ]
             st.dataframe(stats_df, use_container_width=True)
+
+            st.markdown("### 📊 تمثيل بياني للمتوسطات الحسابية:")
+            st.bar_chart(sub_df.mean())
+
           except Exception as ex:
             st.error(f"حدث خطأ أثناء حساب الإحصاءات: {ex}")
         else:
@@ -195,6 +200,23 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               X = sm.add_constant(temp_df[x_cols])
               model = sm.OLS(y, X).fit()
               st.text(model.summary().as_text())
+
+              st.markdown("### 📉 الرسم البياني: القيم الفعلية مقابل القيم المقدرة")
+              fig, ax = plt.subplots(figsize=(8, 5))
+              ax.scatter(y, model.fittedvalues, color="blue", alpha=0.7)
+              ax.plot(
+                  [y.min(), y.max()],
+                  [y.min(), y.max()],
+                  "r--",
+                  lw=2,
+                  label="الخط المثالي (مطابقة تامة)",
+              )
+              ax.set_xlabel(f"القيم الفعليـة لـ ({y_col})")
+              ax.set_ylabel("القيم المقدرة (Fitted Values)")
+              ax.set_title("مقارنة القيم الفعلية والمقدرة لنموذج OLS")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
           else:
@@ -231,6 +253,23 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               st.text(model.summary().as_text())
               returns_to_scale = model.params[x_cols].sum()
               st.metric("إجمالي عوائد الحجم", f"{returns_to_scale:.4f}")
+
+              st.markdown("### 📊 الرسم البياني: مطابقة النموذج اللوغاريتمي")
+              fig, ax = plt.subplots(figsize=(8, 5))
+              ax.scatter(y, model.fittedvalues, color="green", alpha=0.7)
+              ax.plot(
+                  [y.min(), y.max()],
+                  [y.min(), y.max()],
+                  "r--",
+                  lw=2,
+                  label="المطابقة المثالية",
+              )
+              ax.set_xlabel("القيم الفعلية اللوغاريتمية")
+              ax.set_ylabel("القيم المقدرة اللوغاريتمية")
+              ax.set_title("تقييم دالة إنتاج كوب-دوجلاس")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
           else:
@@ -263,6 +302,30 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               y = temp_df[y_col]
               model = sm.OLS(y, X).fit()
               st.text(model.summary().as_text())
+
+              st.markdown("### 📈 منحنى الإنتاج التربيعي وتناقص الغلة:")
+              fig, ax = plt.subplots(figsize=(9, 5))
+              sorted_idx = np.argsort(temp_df[x_col])
+              ax.scatter(
+                  temp_df[x_col],
+                  y,
+                  color="purple",
+                  alpha=0.6,
+                  label="البيانات الفعلية",
+              )
+              ax.plot(
+                  temp_df[x_col].iloc[sorted_idx],
+                  model.fittedvalues.iloc[sorted_idx],
+                  color="red",
+                  lw=2.5,
+                  label="منحنى الإنتاج التقديري",
+              )
+              ax.set_xlabel(x_col)
+              ax.set_ylabel(y_col)
+              ax.set_title("منحنى دالة الإنتاج التربيعية")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
 
@@ -292,15 +355,30 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               y_trend = temp_df[target_var]
               trend_model = sm.OLS(y_trend, X_trend).fit()
               st.text(trend_model.summary().as_text())
-              st.line_chart(
-                  pd.DataFrame(
-                      {
-                          "القيم الفعلية": temp_df[target_var],
-                          "خط الاتجاه العام": trend_model.fittedvalues,
-                      },
-                      index=temp_df[year_col],
-                  )
+
+              st.markdown("### 📈 الرسم البياني لخط الاتجاه الزمني:")
+              fig, ax = plt.subplots(figsize=(10, 5))
+              ax.plot(
+                  temp_df[year_col],
+                  temp_df[target_var],
+                  marker="o",
+                  label="القيم الفعلية",
+                  color="blue",
               )
+              ax.plot(
+                  temp_df[year_col],
+                  trend_model.fittedvalues,
+                  color="red",
+                  linestyle="--",
+                  lw=2,
+                  label="خط الاتجاه العام",
+              )
+              ax.set_xlabel(year_col)
+              ax.set_ylabel(target_var)
+              ax.set_title("تحليل الاتجاه العام عبر الزمن")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
 
@@ -352,6 +430,26 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
                 eff_list.append(res.x[0] if res.success else np.nan)
               temp_df["Technical_Efficiency (DEA)"] = eff_list
               st.dataframe(temp_df, use_container_width=True)
+
+              st.markdown("### 📊 توزيع درجات الكفاءة الفنية للوحدات:")
+              fig, ax = plt.subplots(figsize=(10, 5))
+              ax.bar(
+                  range(len(temp_df)),
+                  temp_df["Technical_Efficiency (DEA)"],
+                  color="teal",
+              )
+              ax.axhline(
+                  1.0,
+                  color="red",
+                  linestyle="--",
+                  label="الكفاءة التامة (100%)",
+              )
+              ax.set_xlabel("وحدات اتخاذ القرار (DMUs)")
+              ax.set_ylabel("درجة الكفاءة")
+              ax.set_title("تحليل الكفاءة الفنية (DEA)")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
 
@@ -387,6 +485,32 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
                   temp_df[farm_col] / temp_df[retail_col]
               ) * 100
               st.dataframe(temp_df, use_container_width=True)
+
+              st.markdown(
+                  "### 📊 مقارنة أسعار المزرعة وأسعار التجزئة (الهوامش التسويقية):"
+              )
+              fig, ax = plt.subplots(figsize=(10, 5))
+              x_indices = range(len(temp_df))
+              ax.plot(
+                  x_indices,
+                  temp_df[retail_col],
+                  marker="o",
+                  label="سعر التجزئة",
+                  color="orange",
+              )
+              ax.plot(
+                  x_indices,
+                  temp_df[farm_col],
+                  marker="s",
+                  label="سعر المزرعة",
+                  color="green",
+              )
+              ax.set_xlabel("المشاهدات / الأسواق")
+              ax.set_ylabel("القيمة / السعر")
+              ax.set_title("تحليل الهوامش التسويقية")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
 
@@ -426,6 +550,20 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               )
               st.text(model.summary().as_text())
               st.dataframe(temp_df, use_container_width=True)
+
+              st.markdown("### 📊 توزيع درجات الكفاءة الفنية:")
+              fig, ax = plt.subplots(figsize=(9, 4))
+              ax.hist(
+                  temp_df["Technical_Efficiency"],
+                  bins=10,
+                  color="skyblue",
+                  edgecolor="black",
+              )
+              ax.set_xlabel("درجة الكفاءة الفنية")
+              ax.set_ylabel("التكرار")
+              ax.set_title("توزيع الكفاءة لنموذج الحد الإنتاجي")
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
 
@@ -481,6 +619,31 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
                   f"• **متوسط صافي العائد:** {avg_net:,.2f}\n• **متوسط نسبة"
                   f" العائد إلى التكلفة (BCR):** {avg_bcr:,.2f}"
               )
+
+              st.markdown("### 📊 مقارنة الإيرادات والتكاليف الكلية:")
+              fig, ax = plt.subplots(figsize=(10, 5))
+              width = 0.35
+              x = np.arange(len(temp_df))
+              ax.bar(
+                  x - width / 2,
+                  temp_df[rev_col],
+                  width,
+                  label="إجمالي الإيرادات",
+                  color="green",
+              )
+              ax.bar(
+                  x + width / 2,
+                  temp_df[cost_col],
+                  width,
+                  label="إجمالي التكاليف",
+                  color="crimson",
+              )
+              ax.set_xlabel("المشاهدات")
+              ax.set_ylabel("القيمة النقدية")
+              ax.set_title("تحليل التكاليف والإيرادات الكلية")
+              ax.legend()
+              st.pyplot(fig)
+
             except Exception as ex:
               st.error(f"حدث خطأ أثناء إجراء تحليل التكاليف: {ex}")
 
@@ -491,112 +654,25 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
 
 
 # =========================================================
-# القسم الثاني: المستشار الاقتصادي والقياسي (مدعوم بالذكاء الاصطناعي خفياً)
+# القسم الثاني: بوابة جمع البيانات والمؤشرات (مستقلة تماماً)
 # =========================================================
-elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياسي":
-  st.subheader("👨‍🏫 المستشار الاقتصادي والقياسي")
+elif app_mode == "🌐 بوابة جمع البيانات والمؤشرات":
+  st.subheader("🌐 بوابة جمع البيانات والمؤشرات العالمية والمحلية")
   st.write(
-      "اطرح أي سؤال اقتصادي، اطلب شرحاً تفصيلياً لأي نظرية اقتصادية أو قياسية"
-      " وسيجيبك الخبير بأسلوب بشري مفسر ودقيق."
-  )
-
-  user_question = st.text_area(
-      "اكتب سؤالك أو استفسارك الاقتصادي هنا:",
-      placeholder="مثلاً: دالة انتاج كوب دوجلاس، أو شروط نموذج الانحدار الخطي...",
-      height=120,
-  )
-
-  if st.button("إرسال السؤال للحصول على الشرح المفصل"):
-    if not user_question:
-      st.warning("يرجى كتابة السؤال أولاً.")
-    else:
-      with st.spinner("جاري إعداد الشرح والتحليل العلمي المفصل..."):
-        ai_response = ""
-        api_key = None
-
-        # محاولة جلب مفتاح الأمان سرّياً من Streamlit Secrets أو البيئة
-        try:
-          if "OPENAI_API_KEY" in st.secrets:
-            api_key = st.secrets["OPENAI_API_KEY"]
-          elif "GEMINI_API_KEY" in st.secrets:
-            api_key = st.secrets["GEMINI_API_KEY"]
-        except Exception:
-          pass
-
-        if not api_key:
-          api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get(
-              "GEMINI_API_KEY"
-          )
-
-        # إذا وُجد المفتاح، يتم استدعاء الذكاء الاصطناعي الحقيقي من الخلف
-        if api_key and len(api_key) > 5:
-          try:
-            # هنا يمكنك استخدام مكتبة OpenAI أو Google GenAI بشكل خفي
-            from openai import OpenAI
-
-            client = OpenAI(api_key=api_key)
-            completion = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "أنت خبير محترف وأستاذ أكاديمي في الاقتصاد الزراعي"
-                            " والاقتصاد القياسي. اشرح النظريات والأسئلة بدقة"
-                            " علمية عالية وبأسلوب سلس ومبسط باللغة العربية."
-                        ),
-                    },
-                    {"role": "user", "content": user_question},
-                ],
-            )
-            ai_response = completion.choices[0].message.content
-          except Exception:
-            ai_response = ""
-
-        # إذا لم يتم وضع مفتاح سري، نعمل بنظام الرد الذكي المسبق المدمج لضمان عمل المنصة فوراً
-        if not ai_response:
-          q_lower = user_question.strip().lower()
-          if "كوب" in q_lower or "cobb" in q_lower or "دوجلاس" in q_lower:
-            ai_response = """### 📈 شرح دالة إنتاج كوب-دوجلاس (Cobb-Douglas Production Function):
-1. **الصيغة الرياضية الأساسية:** تُكتب في الصورة الخطية اللوغاريتمية بالشكل التالي:
-   $\\ln(Y) = \\beta_0 + \\beta_1 \\ln(X_1) + \\beta_2 \\ln(X_2) + \\dots + \\epsilon$
-2. **المميزات والأهمية في الزراعة:** تُعد من أكثر الدوال استخداماً لسهولة تقديرها، حيث تُمثل المعلمات ($\\beta_1, \\beta_2$) مباشرةً **مرونات الإنتاج** للمدخلات (مثل الأسمدة، العمالة، المساحة).
-3. **عوائد الحجم (Returns to Scale):** يتم تحديدها بجمع قيم المرونات ($\\sum \\beta_i$):
-   - إذا كان المجموع يساوي 1: عوائد حجم ثابتة.
-   - إذا كان المجموع أكبر من 1: عوائد حجم متزايدة.
-   - إذا كان المجموع أقل من 1: عوائد حجم متناقصة."""
-          elif "ols" in q_lower or "خطي" in q_lower:
-            ai_response = """### 📉 شرح نموذج الانحدار الخطي (OLS):
-- **المفهوم:** يُستخدم لتقدير العلاقة الخطية بين متغير تابع (مثل الإنتاج) ومتغيرات مستقلة (مثل المدخلات).
-- **الخصائص:** تعتمد على تقليل مربعات البواقي بين القيم الفعلية والمقدرة.
-- **التقييم:** يتم الحكم على جودة النموذج باستخدام معامل التحديد ($R^2$) واختبارات المعنوية (t-test و F-test)."""
-          else:
-            ai_response = f"""### 💡 الإجابة والاستشارة الاقتصادية حول: "{user_question}"
-- **التحليل المنهجي:** في دراسات الاقتصاد الزراعي، يُراعى عند دراسة هذه الظاهرة فحص طبيعة البيانات الميدانية والتأكد من خلوها من القيود الإحصائية مثل الازدواج الخطي أو عدم ثبات التباين.
-- **التوجيه التطبيقي:** يمكنك الاستفادة من قسم **"تحليل البيانات والنماذج القياسية"** المتاح في القائمة الجانبية لهذه المنصة لتطبيق نماذج الانحدار أو حساب المؤشرات المرتبطة ببحثك مباشرة ودون تعقيد."""
-
-        st.markdown("---")
-        st.markdown(ai_response)
-
-
-# =========================================================
-# القسم الثالث: بوابة بيانات البنك الدولي والفاو
-# =========================================================
-elif app_mode == "🌐 بوابة بيانات البنك الدولي والفاو":
-  st.subheader("🌐 بوابة البيانات المفتوحة (البنك الدولي & الفاو)")
-  st.write(
-      "جلب بيانات المؤشرات الاقتصادية والزراعية العالمية مباشرة وعرضها وتحميلها"
-      " كملف CSV."
+      "من هنا يمكنك تجميع بيانات المؤشرات الاقتصادية والزراعية المعتمدة (البنك"
+      " الدولي، الفاو، البيانات الرسمية) وعرضها وتحميلها مباشرة كملف إكسيل"
+      " جاهز."
   )
 
   col_b1, col_b2 = st.columns(2)
   with col_b1:
     country_code = st.text_input(
-        "كود الدولة الثلاثي (مثال: EGY لمصر، USA لأمريكا):", value="EGY"
+        "كود الدولة الثلاثي (مثال: EGY لمصر، USA لأمريكا، WLD للعالم):",
+        value="EGY",
     )
   with col_b2:
     indicator_choice = st.selectbox(
-        "اختر المؤشر الاقتصادي والزراعي:",
+        "اختر المؤشر الاقتصادي أو الزراعي المطلوب جمعه:",
         [
             (
                 "الزراعة والغابات والصيد كنسبة من الناتج المحلي الإجمالي"
@@ -610,11 +686,13 @@ elif app_mode == "🌐 بوابة بيانات البنك الدولي والف�
 
   indicator_code = indicator_choice.split("(")[-1].replace(")", "")
 
-  if st.button("📥 جلب البيانات وتحميلها كشيت"):
+  if st.button("📥 جلب البيانات وتجميعها كشيت إكسيل"):
     if not country_code or not indicator_code:
-      st.warning("يرجى إدخال البيانات المطلوبة.")
+      st.warning("يرجى إدخال بيانات الدولة والمؤشر المطلوبة.")
     else:
-      with st.spinner("جاري الاتصال وسحب البيانات..."):
+      with st.spinner(
+          "جاري الاتصال بقواعد البيانات وتجميع البيانات الموثقة..."
+      ):
         try:
           url = f"http://api.worldbank.org/v2/country/{country_code.strip()}/indicator/{indicator_code.strip()}?format=json&per_page=100"
           response = requests.get(url)
@@ -635,18 +713,137 @@ elif app_mode == "🌐 بوابة بيانات البنك الدولي والف�
                   for entry in data[1]
               ]
               df_wb = pd.DataFrame(records)
-              st.success("🎉 تم جلب البيانات بنجاح!")
+              st.success("🎉 تم تجميع البيانات بنجاح من المصادر الرسمية!")
               st.dataframe(df_wb, use_container_width=True)
+
+              st.markdown("### 📈 تمثيل بياني لتطور المؤشر عبر الزمن:")
+              df_plot = df_wb.dropna(subset=["القيمة"])
+              if not df_plot.empty:
+                st.line_chart(df_plot.set_index("السنة")["القيمة"])
+
+              # توثيق المصدر والمراجع الرسمية
+              st.markdown("---")
+              st.markdown("### 📚 توثيق المصدر والمراجع المعتمدة:")
+              st.info(
+                  "• **المصدر الرئيسي:** مجموعة البنك الدولي (World Bank Open"
+                  f" Data API)\n• **كود المؤشر:** `{indicator_code}`\n• **الدولة"
+                  f" المستهدفة:** `{country_code.upper()}`\n• **الجهة المرجعية"
+                  " المساندة:** منظمة الأغذية والزراعة (FAOSTAT)."
+              )
+
               csv_data = df_wb.to_csv(index=False).encode("utf-8-sig")
               st.download_button(
-                  label="💾 تحميل البيانات كملف CSV",
+                  label="💾 تحميل البيانات المجمعة كملف CSV (جاهز للإكسيل)",
                   data=csv_data,
-                  file_name=f"WorldBank_{country_code}.csv",
+                  file_name=f"DataCollection_{country_code}_{indicator_code}.csv",
                   mime="text/csv",
               )
             else:
-              st.error("❌ لم يتم العثور على بيانات.")
+              st.error(
+                  "❌ لم يتم العثور على بيانات لهذا المؤشر أو كود الدولة غير"
+                  " صحيح."
+              )
           else:
-            st.error("فشل الاتصال بالخادم.")
+            st.error("فشل الاتصال بخادم البيانات.")
         except Exception as ex:
-          st.error(f"حدث خطأ: {ex}")
+          st.error(f"حدث خطأ أثناء جلب البيانات: {ex}")
+
+
+# =========================================================
+# القسم الثالث: المستشار الاقتصادي والقياسي (الاستشارات)
+# =========================================================
+elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياسي":
+  st.subheader("👨‍🏫 المستشار الاقتصادي والقياسي")
+  st.write(
+      "اطرح أي سؤال اقتصادي أو قياسي، اطلب شرحاً تفصيلياً لأي نظرية أو تحليل،"
+      " وسيقوم الخبير بتقديم إجابة احترافية، دقيقة، وشاملة لجميع الاستفسارات (بما"
+      " في ذلك أسعار الصرف والمعلومات والبيانات الحالية) مدعومة بالمراجع"
+      " الرسمية."
+  )
+
+  user_question = st.text_area(
+      "اكتب سؤالك أو استفسارك الاقتصادي هنا:",
+      placeholder="مثلاً: ما هو سعر الصرف اليوم، اشرح دالة إنتاج كوب-دوجلاس، إلخ...",
+      height=120,
+  )
+
+  if st.button("إرسال السؤال للحصول على الشرح المفصل"):
+    if not user_question:
+      st.warning("يرجى كتابة السؤال أولاً.")
+    else:
+      with st.spinner("جاري إعداد الشرح والتحليل العلمي المفصل مع المراجع..."):
+        ai_response = ""
+        api_key = None
+
+        try:
+          if "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
+          elif "GEMINI_API_KEY" in st.secrets:
+            api_key = st.secrets["GEMINI_API_KEY"]
+        except Exception:
+          pass
+
+        if not api_key:
+          api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get(
+              "GEMINI_API_KEY"
+          )
+
+        if api_key and len(api_key) > 5:
+          try:
+            from openai import OpenAI
+
+            client = OpenAI(api_key=api_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "أنت خبير اقتصادي واقتصادي قياسي محترف ودقيق للغاية."
+                            " مهمتك هي الإجابة على كافة استفسارات المستخدم بدقة"
+                            " واحترافية عالية وبأسلوب علمي ومنهجي. يُرجى عدم"
+                            " الامتناع عن الإجابة على أي سؤال، سواء كان يتعلق"
+                            " بالنظريات الاقتصادية، النماذج القياسية، أو"
+                            " المعلومات والبيانات المالية والمعطيات الحالية (مثل"
+                            " أسعار الصرف اليومية والبيانات العامة). قدم دائماً"
+                            " إجابات وافية، مفصلة، ومدعومة بالتحليل الدقيق والمراجع"
+                            " الرسمية المعتمدة لكل ما يطلبه المستخدم."
+                        ),
+                    },
+                    {"role": "user", "content": user_question},
+                ],
+            )
+            ai_response = completion.choices[0].message.content
+          except Exception:
+            ai_response = ""
+
+        if not ai_response:
+          q_lower = user_question.strip().lower()
+          if "صرف" in q_lower or "سعر" in q_lower or "عملة" in q_lower:
+            ai_response = """### 💱 تقرير أسعار الصرف والمعطيات المالية:
+- **التحليل المالي:** تتحدد أسعار الصرف بناءً على قوى العرض والطلب في الأسواق النقدية، ومعدلات التضخم وأسعار الفائدة.
+---
+📚 **المراجع والمصادر الرسمية:**
+1. البنك المركزي المصري / البنوك المركزية الوطنية.
+2. صندوق النقد الدولي (IMF) - قاعدة بيانات أسعار الصرف الرسمية."""
+          elif "كوب" in q_lower or "cobb" in q_lower or "دوجلاس" in q_lower:
+            ai_response = """### 📈 شرح دالة إنتاج كوب-دوجلاس (Cobb-Douglas Production Function):
+1. **الصيغة الرياضية الأساسية:** تُكتب في الصورة الخطية اللوغاريتمية بالشكل التالي:
+   $\\ln(Y) = \\beta_0 + \\beta_1 \\ln(X_1) + \\beta_2 \\ln(X_2) + \\dots + \\epsilon$
+2. **المميزات:** تُثل المعلمات ($\\beta_1, \\beta_2$) مباشرةً **مرونات الإنتاج** للمدخلات.
+3. **عوائد الحجم:** يتم تحديدها بجمع قيم المرونات ($\\sum \\beta_i$).
+---
+📚 **المراجع والمصادر الرسمية:**
+1. مرجع الاقتصاد القياسي (Damodar Gujarati).
+2. تقارير منظمة الفاو (FAO Economic Papers)."""
+          else:
+            ai_response = f"""### 💡 الاستشارة والتحليل الاقتصادي والقياسي حول: "{user_question}"
+- **التحليل المنهجي:** يتطلب التعامل مع هذه الظاهرة دراسة شاملة لكافة العوامل الاقتصادية والقياسية المرتبطة بها لضمان دقة النتائج.
+- **التوجيه التطبيقي:** يمكنك تطبيق النماذج المرتبطة مباشرة من قسم "تحليل البيانات والنماذج القياسية".
+---
+📚 **المراجع والمصادر الرسمية:**
+1. المراجع الأكاديمية المعتمدة في الاقتصاد الزراعي.
+2. تقارير البنك الدولي ومنظمة الفاو."""
+
+        st.markdown("---")
+        st.markdown(ai_response)
