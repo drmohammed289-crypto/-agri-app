@@ -73,7 +73,7 @@ app_mode = st.sidebar.radio(
     [
         "📊 تحليل البيانات والنماذج القياسية",
         "🌐 بوابة جمع البيانات والمؤشرات",
-        "👨‍🏫 المستشار الاقتصادي والقياسي (الخبير الأكاديمي)",
+        "👨‍🏫 المستشار الاقتصادي والقياسي (برنامج الذكاء الاصطناعي)",
     ],
 )
 
@@ -1178,57 +1178,69 @@ elif app_mode == "🌐 بوابة جمع البيانات والمؤشرات":
 
 
 # =========================================================
-# القسم الثالث: المستشار الاقتصادي والقياسي (الخبير الأكاديمي المرتبط بالذكاء الاصطناعي)
+# القسم الثالث: المستشار الاقتصادي والقياسي (برنامج الذكاء الاصطناعي التفاعلي)
 # =========================================================
-elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياسي (الخبير الأكاديمي)":
-  st.subheader("👨‍🏫 المستشار الاقتصادي والقياسي (التحليل الأكاديمي الاحترافي)")
+elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياسي (برنامج الذكاء الاصطناعي)":
+  st.subheader(
+      "🤖 المستشار الاقتصادي والقياسي الذكي (شات تفاعلي مدعوم بالذكاء الاصطناعي)"
+  )
   st.write(
-      "مرحباً بك في مكتب الخبير الأكاديمي. اطرح أي استفسار اقتصادي، قياسي،"
-      " زراعي، أو تجاري، وستحصل على **دراسة تحليلية موسعة، معمقة، ومنهجية**"
-      " مرتبطة بأقوى نماذج الذكاء الاصطناعي (Google Gemini Pro / OpenAI GPT-4o)"
-      " لتضاهي أبحاث كبار الأساتذة."
+      "أهلاً بك في غرفة الحوار مع الخبير الأكاديمي الرقمي. اطرح أي سؤال اقتصادي"
+      " أو استفسار قياسي وسيقوم النظام بالرد عليك بشكل فوري وتفاعلي متكامل."
   )
 
-  user_question = st.text_area(
-      "اكتب سؤالك أو استفسارك الاقتصادي هنا لتلقي التحليل الأكاديمي المفصل:",
-      placeholder=(
-          "مثلاً: اشرح بالتفصيل مؤشرات القدرة التنافسية، السعر النسبي، والميزة"
-          " النسبية الظاهرة وعلاقتهما بالسياسات التجارية..."
-      ),
-      height=140,
+  # إعدادات مفتاح API في الشريط الجانبي لتفعيل الذكاء الحي
+  st.sidebar.markdown("---")
+  st.sidebar.subheader("🔑 إعدادات ذكاء المستشار الآلي")
+  ai_provider = st.sidebar.selectbox(
+      "اختر محرك الذكاء الاصطناعي:",
+      ["Google Gemini (Recommended)", "OpenAI GPT-4o"],
+  )
+  user_api_key = st.sidebar.text_input(
+      "أدخل مفتاح الـ API الخاص بك (Gemini / OpenAI):", type="password"
   )
 
-  if st.button("تقديم الاستشارة الأكاديمية الموسعة"):
-    if not user_question:
-      st.warning("يرجى كتابة السؤال أو الموضوع المراد شرحه أولاً.")
-    else:
-      with st.spinner(
-          "جاري ربط المستشار بأقوى نماذج الذكاء الاصطناعي وصياغة الدراسة"
-          " الأكاديمية..."
-      ):
-        ai_response = ""
-        api_key = None
-        provider = None
+  active_api_key = user_api_key
+  if not active_api_key:
+    try:
+      if "GEMINI_API_KEY" in st.secrets:
+        active_api_key = st.secrets["GEMINI_API_KEY"]
+        ai_provider = "Google Gemini (Recommended)"
+      elif "OPENAI_API_KEY" in st.secrets:
+        active_api_key = st.secrets["OPENAI_API_KEY"]
+        ai_provider = "OpenAI GPT-4o"
+    except Exception:
+      pass
 
-        try:
-          if "GEMINI_API_KEY" in st.secrets:
-            api_key = st.secrets["GEMINI_API_KEY"]
-            provider = "gemini"
-          elif "OPENAI_API_KEY" in st.secrets:
-            api_key = st.secrets["OPENAI_API_KEY"]
-            provider = "openai"
-        except Exception:
-          pass
+  # تهيئة سجل المحادثة في الذاكرة المؤقتة (Session State)
+  if "messages" not in st.session_state:
+    st.session_state.messages = [{
+        "role": "assistant",
+        "content": (
+            "أهلاً بك أيها الباحث والزميل العزيز. أنا خبيرك الاقتصادي والقياسي"
+            " الذكي، جاهز للإجابة على كافة تساؤلاتك حول الاقتصاد الزراعي،"
+            " مؤشرات الأمن الغذائي، الفجوات، دالات الإنتاج، ومؤشرات القدرة"
+            " التنافسية (مثل RCA والسعر النسبي). كيف يمكنني مساعدتك اليوم؟"
+        ),
+    }]
 
-        if not api_key:
-          if os.environ.get("GEMINI_API_KEY"):
-            api_key = os.environ.get("GEMINI_API_KEY")
-            provider = "gemini"
-          elif os.environ.get("OPENAI_API_KEY"):
-            api_key = os.environ.get("OPENAI_API_KEY")
-            provider = "openai"
+  # عرض رسائل الشات السابقة
+  for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+      st.markdown(message["content"])
 
-        system_prompt = (
+  # استقبال السؤال الجديد عبر صندوق المحادثة الحقيقي (Chat Input)
+  if prompt := st.chat_input(
+      "اكتب سؤالك أو استفسارك الاقتصادي هنا (مثل: اشرح مؤشر السعر النسبي)..."
+  ):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+      st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+      with st.spinner("جاري التفكير وصياغة التحليل الأكاديمي العميق..."):
+        response_text = ""
+        system_instruction = (
             "أنت أستاذ أكاديمي مرموق وخبير دولي رفيع المستوى في الاقتصاد"
             " الزراعي، الاقتصاد القياسي، والتجارة الدولية. مهمتك هي تقديم إجابات"
             " وافية، عميقة، ومفصلة للغاية تتطابق مع أرقى المعايير الأكاديمية"
@@ -1242,119 +1254,101 @@ elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياس
             " Bank, Balassa, Gujarati)."
         )
 
-        if api_key and len(api_key) > 5:
-          if provider == "gemini":
+        # محاولة الاتصال الفعلي بالذكاء الاصطناعي إذا وُجد المفتاح
+        if active_api_key and len(active_api_key) > 5:
+          if "Gemini" in ai_provider:
             try:
               import google.generativeai as genai
 
-              genai.configure(api_key=api_key)
+              genai.configure(api_key=active_api_key)
               model = genai.GenerativeModel(
-                  model_name="gemini-1.5-pro", system_instruction=system_prompt
+                  model_name="gemini-1.5-pro",
+                  system_instruction=system_instruction,
               )
-              response = model.generate_content(user_question)
-              ai_response = response.text
+              chat = model.start_chat(history=[])
+              response = chat.send_message(prompt)
+              response_text = response.text
             except Exception as e:
-              ai_response = f"⚠️ تعذر الاتصال بخدمة Gemini API المباشرة: {e}"
-          elif provider == "openai":
+              response_text = (
+                  f"⚠️ تعذر الاتصال بـ Google Gemini API: {e}\n\nيرجى التحقق من"
+                  " صحة المفتاح."
+              )
+          else:
             try:
               from openai import OpenAI
 
-              client = OpenAI(api_key=api_key)
+              client = OpenAI(api_key=active_api_key)
+              formatted_msgs = [{"role": "system", "content": system_instruction}]
+              for m in st.session_state.messages:
+                formatted_msgs.append({"role": m["role"], "content": m["content"]})
               completion = client.chat.completions.create(
-                  model="gpt-4o",
-                  messages=[
-                      {"role": "system", "content": system_prompt},
-                      {"role": "user", "content": user_question},
-                  ],
+                  model="gpt-4o", messages=formatted_msgs
               )
-              ai_response = completion.choices[0].message.content
+              response_text = completion.choices[0].message.content
             except Exception as e:
-              ai_response = f"⚠️ تعذر الاتصال بخدمة OpenAI API المباشرة: {e}"
+              response_text = f"⚠️ تعذر الاتصال بـ OpenAI API: {e}"
 
-        if not ai_response or "⚠️" in ai_response:
-          q_lower = user_question.strip().lower()
-
+        # رد افتراضي احترافي ومتقدم في حال عدم إدخال المفتاح
+        if not response_text or "⚠️" in response_text:
+          p_lower = prompt.strip().lower()
           if (
-              "تنافسية" in q_lower
-              or "سعر" in q_lower
-              or "rca" in q_lower
-              or "ميزة" in q_lower
+              "تنافسية" in p_lower
+              or "سعر" in p_lower
+              or "rca" in p_lower
+              or "ميزة" in p_lower
           ):
-            ai_response = r"""### 🏛️ الدراسة الأكاديمية الموسعة: تحليل القدرة التنافسية التجارية والسعر النسبي
+            response_text = r"""### 🏛️ الدراسة الأكاديمية الموسعة: تحليل القدرة التنافسية التجارية والسعر النسبي
 
 #### 1. الإطار النظري والمفهوم الاقتصادي:
-تُعرّف **القدرة التنافسية (Competitiveness)** في الأدبيات الاقتصادية الدولية بأنها قدرة الدولة على إنتاج وتصدير السلع والخدمات بكفاءة تنافسية في الأسواق العالمية مقارنة بالمنافسين الأجانب، مع الحفاظ على معدلات نمو مستدامة ومستويات معيشية مرتفعة. وفي الاقتصاد الزراعي، ترتبط التنافسية بالكفاءة الإنتاجية، الهياكل السعرية، وسياسات الدعم والتجارة.
+تُعرّف **القدرة التنافسية (Competitiveness)** في الأدبيات الاقتصادية الدولية بأنها قدرة الدولة على إنتاج وتصدير السلع والخدمات بكفاءة تنافسية في الأسواق العالمية مقارنة بالمنافسين الأجانب، مع الحفاظ على معدلات نمو مستدامة ومستويات معيشية مرتفعة.
 
-#### 2. المكونات الأساسية للقدرة التنافسية ومؤشراتها القياسية:
-* **أولاً: مؤشر الميزة النسبية الظاهرة (Revealed Comparative Advantage - RCA):**
-  - **مفهومه:** وضعه العالم *Balassa (1965)* لقياس الأداء التصديري الفعلي لسلعة معينة.
-  - **الصيغة الرياضية:**
-    $$RCA_{ij} = \frac{X_{ij} / X_{it}}{X_{wj} / X_{wt}}$$
-  - **التفسير:** إذا كان $RCA > 1$ فهذا يدل على وجود ميزة نسبية وتنافسية تصديرية قوية للسلعة، أما إذا كان أقل من الواحد ($RCA < 1$) فيعكس ضعفاً تنافسياً.
-
-* **ثانياً: مؤشر السعر النسبي (Relative Price - RP):**
-  - **مفهومه:** يُعد من أهم مؤشرات التنافسية السعرية، حيث يعكس مدى قدرة المنتج المحلي على المنافسة السعرية في الأسواق مقارنة بالأسعار السائدة في الأسواق العالمية أو أسعار المنافسين الرئيسيين.
+#### 2. المكونات الأساسية ومؤشر السعر النسبي:
+* **مؤشر السعر النسبي (Relative Price - RP):**
+  - **مفهومه:** يُعد من أهم مؤشرات التنافسية السعرية، حيث يعكس مدى قدرة المنتج المحلي على المنافسة في الأسواق مقارنة بالأسعار العالمية للمنافسين.
   - **الصيغة الرياضية:**
     $$RP = \frac{P_{local}}{P_{reference}}$$
-    حيث ($P_{local}$) هو سعر التصدير المحلي أو سعر السلعة محلياً، و($P_{reference}$) هو السعر العالمي أو السعر المرجعي للمنافس الرئيسي.
-  - **التفسير الاقتصادي:** 
-    - عندما يكون المؤشر **أقل من الواحد ($RP < 1$)**، فهذا يشير إلى **ميزة سعرية تنافسية** لصالح المنتج المحلي (انخفاض التكاليف أو الأسعار مقارنة بالخارج).
-    - عندما يكون المؤشر **أكبر من الواحد ($RP > 1$)**، فهذا يعني ارتفاع السعر المحلي مقارنة بالعالمي، مما يضعف القدرة التنافسية التصديرية ويزيد جاذبية الواردات.
+    حيث ($P_{local}$) هو سعر التصدير المحلي، و($P_{reference}$) هو السعر العالمي أو المرجعي للمنافس.
+  - **التفسير:** إذا كان $RP < 1$ فهذا يعكس **ميزة سعرية تنافسية** للمنتج المحلي، أما إذا كان $RP > 1$ فيعكس ارتفاع السعر المحلي مقارنة بالعالمي مما يضعف التنافسية.
 
-* **ثالثاً: النصيب السوقي (Market Share):**
-  - يقيس النسبة المئوية لصادرات الدولة من السلعة إلى إجمالي الصادرات العالمية منها ($(X_{ij} / X_{wj}) \times 100$)، ويعكس القوة الاحتكارية والنفاذ التسويقي.
-
-* **رابعاً: معامل الاختراق الاستيرادي (Import Penetration Rate):**
-  - يقيس مدى اعتماد السوق المحلي على الواردات مقارنة بالاستهلاك المحلي الإجمالي، وكلما انخفض هذا المعامل دل ذلك على تعزيز القاعدة الإنتاجية الوطنية.
-
-#### 3. الآثار السياساتية والتوصيات لصناع القرار:
-1. ضرورة التدخل لخفض تكاليف الإنتاج الزراعي والتسويقي لتقليل السعر النسبي ($RP$).
-2. تبني سياسات جودة عالية وتفعيل المواصفات القياسية لتجاوز عتبة الميزة النسبية ($RCA > 1$).
+* **مؤشر الميزة النسبية الظاهرة (RCA):**
+  $$RCA_{ij} = \frac{X_{ij} / X_{it}}{X_{wj} / X_{wt}}$$
+  إذا كان الناتج أكبر من الواحد ($RCA > 1$) فهذا يدل على وجود ميزة نسبية تصديرية قوية.
 
 ---
 📚 **المراجع والمصادر الأكاديمية المعتمدة:**
-1. Balassa, B. (1965). *Trade Liberalisation and “Revealed” Comparative Advantage*. The Manchester School, 33(2), 99-123.
-2. Porter, M. E. (1990). *The Competitive Advantage of Nations*. Free Press.
-3. FAO (2022). *Agricultural Trade and Market Competitiveness Methodologies*. Rome."""
-
+1. Balassa, B. (1965). *Trade Liberalisation and “Revealed” Comparative Advantage*. The Manchester School.
+2. Porter, M. E. (1990). *The Competitive Advantage of Nations*.
+3. FAO (2022). *Agricultural Trade Competitiveness Methodologies*."""
           elif (
-              "أمن" in q_lower
-              or "غذائي" in q_lower
-              or "اكتفاء" in q_lower
-              or "فجوة" in q_lower
+              "أمن" in p_lower
+              or "غذائي" in p_lower
+              or "اكتفاء" in p_lower
+              or "فجوة" in p_lower
           ):
-            ai_response = r"""### 🌾 الدراسة الأكاديمية الموسعة: منظومة الأمن الغذائي، الفجوات، وفترة كفاية الإنتاج
+            response_text = r"""### 🌾 الدراسة الأكاديمية الموسعة: منظومة الأمن الغذائي والفجوات
 
 #### 1. الإطار النظري والمفاهيمي:
-يُعد الأمن الغذائي ركيزة أساسية للأمن القومي والاستقرار الاقتصادي والاجتماعي. وفقاً لمنظمة الأغذية والزراعة (FAO)، يتحدد الأمن الغذائي من خلال أربعة أبعاد رئيسية: الإتاحة، الوصول، الاستقرار، والتوظيف. وفي الاقتصاد الزراعي القياسي، يتم قياس هذه الأبعاد عبر مؤشرات كمية دقيقة:
-- **نسبة الاكتفاء الذاتي (Self-Sufficiency Ratio - SSR):** تقيس قدرة الإنتاج المحلي على تغطية الاستهلاك المتاح ($ (الإنتاج / الاستهلاك المتاح) \times 100 $).
-- **نسبة الاعتماد الاستيرادي (Import Dependency Ratio - IDR):** تقيس حساسية الدولة وتأثرها بالأسواق الخارجية.
-- **الفجوة الغذائية (الظاهرية والحقيقية):** 
-  - *الظاهرية:* الفرق الإجمالي بين الاستهلاك والإنتاج.
-  - *الحقيقية:* تُحسب بعد استبعاد الفاقد والتلف المتراكم في حلقات سلسلة الإمداد والحصاد، مما يعكس العجز الفعلي بدقة تامة.
-- **فترة كفاية الإنتاج المحلي (Production Adequacy Period):** 
-  $$\text{فترة الكفاية (يوم)} = \left( \frac{\text{الإنتاج المحلي}}{\text{إجمالي الاستهلاك المتاح}} \right) \times 365.25$$
-  وهو مؤشر بالغ الأهمية لقياس عدد الأيام التي يستطيع فيها الاقتصاد الاكتفاء ذاتياً دون استيراد.
+يُعد الأمن الغذائي ركيزة أساسية للأمن القومي. ويتم قياسه عبر مؤشرات كمية دقيقة:
+- **نسبة الاكتفاء الذاتي (SSR):** $(الإنتاج / الاستهلاك المتاح) \times 100$.
+- **الفجوة الغذائية (الظاهرية والحقيقية):**
+  - الظاهرية: الفرق الإجمالي بين الاستهلاك والإنتاج.
+  - الحقيقية: تُحسب بعد استبعاد الفاقد والتلف المتراكم في سلاسل الإمداد.
+- **فترة كفاية الإنتاج المحلي (يوم):** 
+  $$\text{فترة الكفاية} = \left( \frac{\text{الإنتاج المحلي}}{\text{إجمالي الاستهلاك المتاح}} \right) \times 365.25$$
 
 ---
-📚 **المراجع والمصادر الأكاديمية المعتمدة:**
-1. FAO (2021). *The State of Food Security and Nutrition in the World*. Rome.
-2. World Bank (2020). *Food Security Assessment Methodologies and Metrics*."""
-
+📚 **المراجع:** FAO (2021) & World Bank (2020)."""
           else:
-            ai_response = r"""### 💡 الاستشارة الأكاديمية الموسعة حول الاستفسار المطروح:
+            response_text = f"""💡 **تحليل الخبير الأكاديمي حول استفسارك:**
 
-#### 1. التحليل المنهجي والنظري:
-في بحوث الاقتصاد الزراعي والاقتصاد القياسي التطبيقي، يتطلب تناول هذه القضية دمج النظريات الاقتصادية الجزئية (سلوك المنتج، تعظيم الأرباح، دلالات التكلفة) والنظريات الكلية (التجارة الدولية، السياسات النقدية والمالية، الأمن القومي). يتم بناء النماذج الرياضية والقياسية لتقدير المعالم بدقة عالية باستخدام أساليب الانحدار المتقدمة.
+بناءً على النظريات المتقدمة في الاقتصاد الزراعي والقياسي، يتطلب التعامل مع هذا الموضوع دمج النظريات الاقتصادية الجزئية والكلية، وتحليل سلاسل الإمداد، وتقدير معالم النماذج القياسية بدقة.
 
-#### 2. التوجيه التطبيقي لصناع السياسات:
-* تقييم دقيق للبيانات التاريخية والسلاسل الزمنية.
-* استخدام النماذج الكمية المتاحة في المنصة (مثل دالات الإنتاج، تحليل الكفاءة DEA، مؤشرات التنافسية، والاتجاه العام).
+*(ملاحظة: لتشغيل الذكاء الاصطناعي التفاعلي الحي بالكامل والرد على أي سؤال مفتوح، يرجى إدخال مفتاح Google Gemini API أو OpenAI API في الشريط الجانبي).*
 
 ---
-📚 **المراجع والمصادر الأكاديمية المعتمدة:**
-1. Gujarati, D. N., & Porter, D. C. (2009). *Basic Econometrics*. McGraw-Hill.
-2. Pindyck, R. S., & Rubinfeld, D. L. (1998). *Econometric Models and Economic Forecasts*. McGraw-Hill."""
+📚 **المراجع المعتمدة:** Gujarati & Porter (2009) - Basic Econometrics."""
 
-        st.markdown("---")
-        st.markdown(ai_response)
+        st.markdown(response_text)
+        st.session_state.messages.append(
+            {"role": "assistant", "content": response_text}
+        )
