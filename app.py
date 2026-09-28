@@ -7,14 +7,14 @@ import streamlit as st
 
 # إعدادات صفحة التطبيق
 st.set_page_config(
-    page_title="منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي",
+    page_title="منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي الشاملة",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 
 # ---------------------------------------------------------
-# نظام الحماية بكلمة المرور
+# 1. نظام الحماية بكلمة المرور
 # ---------------------------------------------------------
 def check_password():
   """التحقق من كلمة المرور"""
@@ -29,7 +29,7 @@ def check_password():
 
   if "password_correct" not in st.session_state:
     st.markdown("## 🔒 المنصة محمية بكلمة مرور")
-    st.write("الرجاء إدخال كود المرور أو الاشتراك للوصول إلى المنصة:")
+    st.write("الرجاء إدخال كود المرور للوصول إلى المنصة:")
     st.text_input(
         "كلمة المرور:",
         type="password",
@@ -59,24 +59,19 @@ if not check_password():
 # ---------------------------------------------------------
 st.title("🌾 منصة تحليل الاقتصاد الزراعي والاقتصاد القياسي الشاملة")
 st.write(
-    "منصة بحثية متقدمة للتحليلات القياسية، الإحصاء الوصفى، الاستشارات"
-    " الذكية، وجلب بيانات البنك الدولي المفتوحة."
+    "منصة بحثية متكاملة للتحليلات القياسية، الإحصاء الوصفي، الاستشارات الذكية"
+    " بالذكاء الاصطناعي، وجلب بيانات البنك الدولي والفاو."
 )
 
-# الإعدادات العامة في القائمة الجانبية
+# القائمة الجانبية لتحديد أقسام المنصة
 st.sidebar.header("⚙️ إعدادات المنصة")
 app_mode = st.sidebar.radio(
     "اختر قسم العمل الأساسي:",
-    ["📊 تحليل البيانات والنماذج القياسية", "🤖 المستشار الاقتصادي الذكي (AI)", "🌐 بوابة بيانات البنك الدولي والفاو"]
-)
-
-# إعدادات مفتاح الذكاء الاصطناعي في الجانب
-st.sidebar.markdown("---")
-st.sidebar.header("🔑 إعدادات الذكاء الاصطناعي")
-ai_api_key = st.sidebar.text_input(
-    "مفتاح API (Gemini/OpenAI):",
-    type="password",
-    help="مطلوب فقط لاستخدام قسم المستشار الاقتصادي الذكي.",
+    [
+        "📊 تحليل البيانات والنماذج القياسية",
+        "🤖 المستشار الاقتصادي الذكي (AI)",
+        "🌐 بوابة بيانات البنك الدولي والفاو",
+    ],
 )
 
 # =========================================================
@@ -116,6 +111,7 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               ),
               "6. حساب الهوامش التسويقية (Marketing Margins)",
               "7. تحليل حد الإنتاج القياسي (Frontier Analysis - COLS)",
+              "8. تحليل التكاليف وصافي العائد (Cost & Profitability Analysis)",
           ],
       )
 
@@ -130,16 +126,13 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
         if selected_stats_cols:
           try:
             sub_df = df[selected_stats_cols]
-            # حساب الإحصاءات الأساسية
             stats_df = sub_df.describe().T
-            # إضافة التباين ومعامل الاختلاف
             stats_df["التباين"] = sub_df.var()
             stats_df["معامل الاختلاف (%)"] = (
                 sub_df.std() / sub_df.mean()
             ) * 100
             stats_df["المنوال"] = sub_df.mode().iloc[0]
 
-            # إعادة تسمية الأعمدة للعربية
             stats_df = stats_df.rename(
                 columns={
                     "count": "عدد المشاهدات",
@@ -153,7 +146,6 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
                 }
             )
 
-            # إعادة ترتيب الأعمدة لشكل احترافي
             ordered_cols = [
                 "عدد المشاهدات",
                 "المتوسط الحسابي",
@@ -180,7 +172,7 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
             st.info(
                 "• **التشتت:** يعكس الانحراف المعياري والتباين مدى انتشار"
                 " البيانات حول قيمتها المتوسطة، بينما يوضح معامل الاختلاف درجة"
-                " التشتت النسبي للمقارنة بين المتغيرات."
+                " التشتت النسبي."
             )
           except Exception as ex:
             st.error(f"حدث خطأ أثناء حساب الإحصاءات الوصفية: {ex}")
@@ -488,6 +480,40 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
           else:
             st.warning("يرجى اختيار المتغيرات.")
 
+      # 8. تحليل التكاليف وصافي العائد (إضافة جديدة)
+      elif model_choice == "8. تحليل التكاليف وصافي العائد (Cost & Profitability Analysis)":
+        st.subheader("💵 تحليل التكاليف الكلية، الإيرادات، وصافي العائد الاقتصادي")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+          rev_col = st.selectbox("اختر عمود إجمالي الإيرادات (Total Revenue):", columns_list, key="c_rev")
+        with col2:
+          cost_col = st.selectbox("اختر عمود إجمالي التكاليف (Total Costs):", columns_list, key="c_cost")
+        with col3:
+          yield_col = st.selectbox("اختر عمود الإنتاجية أو المساحة (للحساب النسبي اختياري):", columns_list, key="c_yield")
+
+        if st.button("🚀 تشغيل التحليل المالي واحتساب المؤشرات", key="btn_cost"):
+          if rev_col and cost_col:
+            try:
+              temp_df = df.copy()
+              temp_df[rev_col] = pd.to_numeric(temp_df[rev_col], errors='coerce')
+              temp_df[cost_col] = pd.to_numeric(temp_df[cost_col], errors='coerce')
+              temp_df = temp_df.dropna(subset=[rev_col, cost_col])
+
+              temp_df["صافي العائد (Net Return)"] = temp_df[rev_col] - temp_df[cost_col]
+              temp_df["نسبة العائد إلى التكلفة (BCR)"] = temp_df[rev_col] / temp_df[cost_col]
+              temp_df["معدل الربحية (%)"] = (temp_df["صافي العائد (Net Return)"] / temp_df[cost_col]) * 100
+
+              st.dataframe(temp_df, use_container_width=True)
+
+              st.markdown("### 📊 ملخص المؤشرات الاقتصادية العامة:")
+              avg_net = temp_df["صافي العائد (Net Return)"].mean()
+              avg_bcr = temp_df["نسبة العائد إلى التكلفة (BCR)"].mean()
+              st.success(f"• **متوسط صافي العائد:** {avg_net:,.2f}\n• **متوسط نسبة العائد إلى التكلفة (BCR):** {avg_bcr:,.2f}")
+            except Exception as ex:
+              st.error(f"حدث خطأ أثناء إجراء تحليل التكاليف: {ex}")
+          else:
+            st.warning("يرجى اختيار أعمدة الإيرادات والتكاليف على الأقل.")
+
     except Exception as e:
       st.error(f"حدث خطأ أثناء قراءة الملف: {e}")
   else:
@@ -495,13 +521,12 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
 
 
 # =========================================================
-# القسم الثاني: المستشار الاقتصادي الذكي (AI)
+# القسم الثاني: المستشار الاقتصادي الذكي (AI - Backend Secrets)
 # =========================================================
 elif app_mode == "🤖 المستشار الاقتصادي الذكي (AI)":
   st.subheader("🤖 المستشار الاقتصادي والقياسي (مدعوم بالذكاء الاصطناعي)")
   st.write(
-      "اطرح أي سؤال اقتصادي، اطلب شرحاً تفصيلياً لنظرية اقتصادية (مثل قانون"
-      " تناقص الغلة، مروناة الطلب، توازن السوق)، أو استفسر عن أي مفهوم قياسي وسيجيبك"
+      "اطرح أي سؤال اقتصادي، اطلب شرحاً تفصيلياً لأي نظرية اقتصادية أو قياسية وسيجيبك"
       " الخبير بأسلوب بشري مفسر ودقيق."
   )
 
@@ -514,30 +539,36 @@ elif app_mode == "🤖 المستشار الاقتصادي الذكي (AI)":
   if st.button("💬 إرسال السؤال للحصول على الشرح المفصل"):
     if not user_question:
       st.warning("يرجى كتابة السؤال أولاً.")
-    elif not ai_api_key:
-      st.warning(
-          "⚠️ يرجى إدخال مفتاح API الخاص بك في خانة الإعدادات بالقائمة الجانبية"
-          " أولاً."
-      )
     else:
-      with st.spinner("جاري صياغة الإجابة العلمية المفصلة..."):
-        try:
-          import google.generativeai as genai
+      # جلب المفتاح تلقائياً من أمان التطبيق (st.secrets) دون الحاجة لكتابته على الصفحة
+      ai_api_key = None
+      try:
+        ai_api_key = st.secrets["GEMINI_API_KEY"]
+      except Exception:
+        pass
 
-          genai.configure(api_key=ai_api_key)
-          # استخدام نموذج جيميناي
-          model = genai.GenerativeModel("gemini-1.5-flash")
-          prompt = f"أنت أستاذ وخبير محترف في الاقتصاد والاقتصاد القياسي الزراعي. أجب عن السؤال التالي بأسلوب علمي دقيق، مفسر، ومكتوب بطريقة بشرية منظمة وبسيطة:\n\n{user_question}"
-          response = model.generate_content(prompt)
+      if not ai_api_key:
+        st.error(
+            "⚠️ تنبيه إداري: لم يتم العثور على مفتاح API الخاص بالذكاء الاصطناعي في"
+            " إعدادات الأمان (Secrets) للمنصة."
+        )
+      else:
+        with st.spinner("جاري صياغة الإجابة العلمية المفصلة..."):
+          try:
+            import google.generativeai as genai
 
-          st.markdown("---")
-          st.markdown("### 💡 إجابة المستشار الاقتصادي:")
-          st.markdown(response.text)
-        except Exception as e:
-          st.error(
-              f"حدث خطأ أثناء الاتصال بمحرك الذكاء الاصطناعي: {e}. تأكد من صحة"
-              " مفتاح الـ API."
-          )
+            genai.configure(api_key=ai_api_key)
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            prompt = f"أنت أستاذ وخبير محترف في الاقتصاد والاقتصاد القياسي الزراعي. أجب عن السؤال التالي بأسلوب علمي دقيق، مفسر، ومكتوب بطريقة بشرية منظمة وبسيطة:\n\n{user_question}"
+            response = model.generate_content(prompt)
+
+            st.markdown("---")
+            st.markdown("### 💡 إجابة المستشار الاقتصادي:")
+            st.markdown(response.text)
+          except Exception as e:
+            st.error(
+                f"حدث خطأ أثناء الاتصال بمحرك الذكاء الاصطناعي: {e}"
+            )
 
 
 # =========================================================
@@ -548,7 +579,7 @@ elif app_mode == "🌐 بوابة بيانات البنك الدولي والف�
   st.write(
       "هنا يمكنك جلب بيانات أي مؤشر اقتصادي أو زراعي عالمي مباشرة من قواعد"
       " بيانات البنك الدولي المفتوحة، وعرض الجدول، وتوثيق المصدر، وتحميل البيانات"
-      " كملف إكسيل/CSV."
+      " كملف CSV/Excel."
   )
 
   col_b1, col_b2 = st.columns(2)
@@ -611,7 +642,6 @@ elif app_mode == "🌐 بوابة بيانات البنك الدولي والف�
                   "🎉 تم جلب البيانات بنجاح من قاعدة بيانات البنك الدولي الرسمية!"
               )
 
-              # عرض المصدر بوضوح
               st.markdown("### 📚 توثيق المصدر والبيانات:")
               st.info(
                   f"• **المصدر الرسمي:** البنك الدولي (World Bank Open Data"
@@ -621,7 +651,6 @@ elif app_mode == "🌐 بوابة بيانات البنك الدولي والف�
 
               st.dataframe(df_wb, use_container_width=True)
 
-              # زر التحميل كملف CSV (يفتح مباشرة في إكسيل)
               csv_data = df_wb.to_csv(index=False).encode("utf-8-sig")
               st.download_button(
                   label="💾 تحميل البيانات كملف CSV (جاهز للإكسيل)",
