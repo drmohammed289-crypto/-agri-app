@@ -61,8 +61,9 @@ if not check_password():
 # ---------------------------------------------------------
 st.title("🌾 منصة الخبير الاقتصادي والقياسي الذكي")
 st.write(
-    "منصة بحثية وأكاديمية متكاملة للتحليلات القياسية، دالة الإنتاج، كفاءة"
-    " الأداء، مؤشرات الأمن الغذائي، التجارة الخارجية، والقدرة التنافسية."
+    "منصة بحثية وأكاديمية متكاملة للتحليلات القياسية، دالة الإنتاج، اتجاهات"
+    " النمو، كفاءة الأداء، مؤشرات الأمن الغذائي والفجوات، التجارة الخارجية،"
+    " والقدرة التنافسية."
 )
 
 # القائمة الجانبية لتحديد أقسام المنصة
@@ -106,7 +107,7 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               "1. دالة الإنتاج الخطية (OLS)",
               "2. دالة إنتاج كوب-دوجلاس (Cobb-Douglas)",
               "3. دالة الإنتاج التربيعية (Quadratic - تناقص الغلة)",
-              "4. تحليل الاتجاه العام (Trend Analysis)",
+              "4. تحليل الاتجاه العام بصيغه المختلفة (خطي، أسي/نمو)",
               (
                   "5. تحليل الكفاءة باستخدام مغلف البيانات (DEA - Data Envelopment"
                   " Analysis)"
@@ -114,9 +115,15 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
               "6. حساب الهوامش التسويقية (Marketing Margins)",
               "7. تحليل حد الإنتاج القياسي (Frontier Analysis - COLS)",
               "8. تحليل التكاليف وصافي العائد (Cost & Profitability Analysis)",
-              "9. مؤشرات الأمن الغذائي (Food Security Indicators)",
+              (
+                  "9. مؤشرات الأمن الغذائي والفجوات (اكتفاء، فجوة ظاهرية/حقيقية،"
+                  " فترة الكفاية)"
+              ),
               "10. مؤشرات التجارة الخارجية والتبعية الاقتصادية",
-              "11. مؤشرات القدرة التنافسية (RCA, النصيب السوقي, الاختراق, السعر النسبي)",
+              (
+                  "11. مؤشرات القدرة التنافسية (RCA, النصيب السوقي, الاختراق,"
+                  " السعر النسبي)"
+              ),
           ],
       )
 
@@ -332,58 +339,114 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
             except Exception as ex:
               st.error(f"حدث خطأ: {ex}")
 
-      # 4. تحليل الاتجاه العام
-      elif model_choice == "4. تحليل الاتجاه العام (Trend Analysis)":
-        st.subheader("📅 تحليل الاتجاه العام للمتغيرات عبر الزمن")
-        col1, col2 = st.columns(2)
+      # 4. تحليل الاتجاه العام بصيغه المختلفة (محدث وشامل للصيغ الخطية والأسية)
+      elif model_choice == "4. تحليل الاتجاه العام بصيغه المختلفة (خطي، أسي/نمو)":
+        st.subheader(
+            "📅 تحليل الاتجاه العام وصيغ النمو الزمنية (الخطية والأسية/اللوغاريتمية)"
+        )
+        col1, col2, col3 = st.columns(3)
         with col1:
           year_col = st.selectbox(
-              "اختر عمود الزمن أو السنوات:", columns_list, key="t_yr"
+              "عمود الزمن / السنوات (Time/Year):", columns_list, key="t_yr"
           )
         with col2:
           target_var = st.selectbox(
-              "اختر المتغير المراد دراسة اتجاهه العام:",
+              "المتغير المراد دراسة اتجاهه:",
               [c for c in columns_list if c != year_col],
               key="t_var",
           )
+        with col3:
+          trend_form = st.selectbox(
+              "اختر صيغة الاتجاه العام:",
+              [
+                  "الخطية (Linear: Y = a + bT)",
+                  "الأسية / النمو (Exponential: ln(Y) = a + bT)",
+              ],
+              key="t_form",
+          )
 
-        if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_t"):
+        if st.button("🚀 تشغيل تحليل الاتجاه وإصدار التقرير", key="btn_t"):
           if year_col and target_var:
             try:
               temp_df = df[[year_col, target_var]].apply(
                   pd.to_numeric, errors="coerce"
               )
               temp_df = temp_df.dropna()
-              X_trend = sm.add_constant(temp_df[year_col])
-              y_trend = temp_df[target_var]
-              trend_model = sm.OLS(y_trend, X_trend).fit()
-              st.text(trend_model.summary().as_text())
 
-              st.markdown("### 📈 الرسم البياني لخط الاتجاه الزمني:")
-              fig, ax = plt.subplots(figsize=(10, 5))
-              ax.plot(
-                  temp_df[year_col],
-                  temp_df[target_var],
-                  marker="o",
-                  label="القيم الفعلية",
-                  color="blue",
-              )
-              ax.plot(
-                  temp_df[year_col],
-                  trend_model.fittedvalues,
-                  color="red",
-                  linestyle="--",
-                  lw=2,
-                  label="خط الاتجاه العام",
-              )
-              ax.set_xlabel(year_col)
-              ax.set_ylabel(target_var)
-              ax.set_title("تحليل الاتجاه العام عبر الزمن")
-              ax.legend()
-              st.pyplot(fig)
+              T = temp_df[year_col]
+              Y = temp_df[target_var]
+
+              if "الأسية" in trend_form:
+                if (Y <= 0).any():
+                  st.error(
+                      "❌ عذراً، الصيغة الأسية تتطلب أن تكون جميع قيم المتغير"
+                      " موجبة (> 0)."
+                  )
+                else:
+                  Y_transformed = np.log(Y)
+                  X_trend = sm.add_constant(T)
+                  model = sm.OLS(Y_transformed, X_trend).fit()
+
+                  st.text(model.summary().as_text())
+
+                  b1 = model.params.iloc[1]
+                  growth_rate = (np.exp(b1) - 1) * 100
+                  st.metric(
+                      "معدل النمو السنوي المركب التقديري (CAGR %)",
+                      f"{growth_rate:.2f}%",
+                  )
+
+                  fitted_orig = np.exp(model.fittedvalues)
+
+                  st.markdown(
+                      "### 📈 الرسم البياني لخط الاتجاه الأسي / النمو:"
+                  )
+                  fig, ax = plt.subplots(figsize=(10, 5))
+                  ax.plot(
+                      T, Y, marker="o", label="القيم الفعلية", color="blue"
+                  )
+                  ax.plot(
+                      T,
+                      fitted_orig,
+                      color="red",
+                      linestyle="--",
+                      lw=2.5,
+                      label="الاتجاه الأسي التقديري",
+                  )
+                  ax.set_xlabel(year_col)
+                  ax.set_ylabel(target_var)
+                  ax.set_title("تحليل الاتجاه العام (الصيغة الأسية/النمو)")
+                  ax.legend()
+                  st.pyplot(fig)
+              else:
+                X_trend = sm.add_constant(T)
+                model = sm.OLS(Y, X_trend).fit()
+                st.text(model.summary().as_text())
+
+                b1 = model.params.iloc[1]
+                st.metric(
+                    "مقدار التغير السنوي المطلق (الميل b1)", f"{b1:,.4f}"
+                )
+
+                st.markdown("### 📈 الرسم البياني لخط الاتجاه الخطي:")
+                fig, ax = plt.subplots(figsize=(10, 5))
+                ax.plot(T, Y, marker="o", label="القيم الفعلية", color="blue")
+                ax.plot(
+                    T,
+                    model.fittedvalues,
+                    color="red",
+                    linestyle="--",
+                    lw=2.5,
+                    label="الاتجاه الخطي العام",
+                )
+                ax.set_xlabel(year_col)
+                ax.set_ylabel(target_var)
+                ax.set_title("تحليل الاتجاه العام (الصيغة الخطية)")
+                ax.legend()
+                st.pyplot(fig)
 
             except Exception as ex:
-              st.error(f"حدث خطأ: {ex}")
+              st.error(f"حدث خطأ أثناء تنفيذ تحليل الاتجاه: {ex}")
 
       # 5. تحليل الكفاءة DEA
       elif model_choice == (
@@ -650,97 +713,224 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
             except Exception as ex:
               st.error(f"حدث خطأ أثناء إجراء تحليل التكاليف: {ex}")
 
-      # 9. مؤشرات الأمن الغذائي
-      elif model_choice == "9. مؤشرات الأمن الغذائي (Food Security Indicators)":
-        st.subheader("🌾 تحليل ومؤشرات الأمن الغذائي (الاكتفاء الذاتي والاعتماد الاستيرادي)")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-          fs_prod = st.selectbox("اختر عمود الإنتاج المحلي (Production):", columns_list, key="fs_p")
-        with col2:
-          fs_imp = st.selectbox("اختر عمود الواردات (Imports):", columns_list, key="fs_i")
-        with col3:
-          fs_exp = st.selectbox("اختر عمود الصادرات (Exports):", columns_list, key="fs_e")
+      # 9. مؤشرات الأمن الغذائي والفجوات (اكتفاء، فجوة ظاهرية/حقيقية، فترة الكفاية)
+      elif (
+          model_choice
+          == "9. مؤشرات الأمن الغذائي والفجوات (اكتفاء، فجوة ظاهرية/حقيقية، فترة الكفاية)"
+      ):
+        st.subheader(
+            "🌾 تحليل مؤشرات الأمن الغذائي، الفجوة الظاهرية والحقيقية، وفترة كفاية"
+            " الإنتاج"
+        )
 
-        if st.button("🚀 حساب مؤشرات الأمن الغذائي", key="btn_fs"):
-          if fs_prod and fs_imp and fs_exp:
-            try:
-              temp_df = df.copy()
-              temp_df[fs_prod] = pd.to_numeric(temp_df[fs_prod], errors='coerce')
-              temp_df[fs_imp] = pd.to_numeric(temp_df[fs_imp], errors='coerce')
-              temp_df[fs_exp] = pd.to_numeric(temp_df[fs_exp], errors='coerce')
-              temp_df = temp_df.dropna(subset=[fs_prod, fs_imp, fs_exp])
+        c1, c2 = st.columns(2)
+        with c1:
+          fs_prod = st.selectbox(
+              "عمود الإنتاج المحلي (Production):", columns_list, key="fs_p"
+          )
+          fs_imp = st.selectbox(
+              "عمود الواردات (Imports):", columns_list, key="fs_i"
+          )
+          fs_exp = st.selectbox(
+              "عمود الصادرات (Exports):", columns_list, key="fs_e"
+          )
+        with c2:
+          fs_waste = st.selectbox(
+              "عمود الفاقد والتلف (Waste/Losses - اختياري للحقيقية):",
+              [None] + columns_list,
+              key="fs_w",
+          )
+          fs_pop = st.selectbox(
+              "عمود عدد السكان (Population - اختياري):",
+              [None] + columns_list,
+              key="fs_pop",
+          )
 
-              temp_df["إجمالي الاستهلاك المتاح"] = temp_df[fs_prod] + temp_df[fs_imp] - temp_df[fs_exp]
-              temp_df["نسبة الاكتفاء الذاتي (%)"] = np.where(
-                  temp_df["إجمالي الاستهلاك المتاح"] > 0,
-                  (temp_df[fs_prod] / temp_df["إجمالي الاستهلاك المتاح"]) * 100,
-                  np.nan
+        if st.button(
+            "🚀 احتساب مؤشرات الأمن الغذائي والفجوات وفترة الكفاية",
+            key="btn_fs_all",
+        ):
+          try:
+            temp_df = df.copy()
+            temp_df[fs_prod] = pd.to_numeric(
+                temp_df[fs_prod], errors="coerce"
+            )
+            temp_df[fs_imp] = pd.to_numeric(temp_df[fs_imp], errors="coerce")
+            temp_df[fs_exp] = pd.to_numeric(temp_df[fs_exp], errors="coerce")
+
+            temp_df["إجمالي الاستهلاك المتاح"] = (
+                temp_df[fs_prod] + temp_df[fs_imp] - temp_df[fs_exp]
+            )
+            temp_df["نسبة الاكتفاء الذاتي (SSR %)"] = np.where(
+                temp_df["إجمالي الاستهلاك المتاح"] > 0,
+                (temp_df[fs_prod] / temp_df["إجمالي الاستهلاك المتاح"]) * 100,
+                np.nan,
+            )
+            temp_df["نسبة الاعتماد الاستيرادي (IDR %)"] = np.where(
+                temp_df["إجمالي الاستهلاك المتاح"] > 0,
+                (temp_df[fs_imp] / temp_df["إجمالي الاستهلاك المتاح"]) * 100,
+                np.nan,
+            )
+            temp_df["الفجوة الغذائية الظاهرية"] = (
+                temp_df["إجمالي الاستهلاك المتاح"] - temp_df[fs_prod]
+            )
+
+            if fs_waste and fs_waste != "None":
+              temp_df[fs_waste] = pd.to_numeric(
+                  temp_df[fs_waste], errors="coerce"
               )
-              temp_df["نسبة الاعتماد الاستيرادي (%)"] = np.where(
-                  temp_df["إجمالي الاستهلاك المتاح"] > 0,
-                  (temp_df[fs_imp] / temp_df["إجمالي الاستهلاك المتاح"]) * 100,
-                  np.nan
+              net_prod = temp_df[fs_prod] - temp_df[fs_waste]
+              temp_df["الفجوة الغذائية الحقيقية"] = (
+                  temp_df["إجمالي الاستهلاك المتاح"] - net_prod
+              )
+            else:
+              temp_df["الفجوة الغذائية الحقيقية"] = (
+                  temp_df["إجمالي الاستهلاك المتاح"]
+                  - (temp_df[fs_prod] * 0.90)
               )
 
-              st.dataframe(temp_df, use_container_width=True)
-              avg_ssr = temp_df["نسبة الاكتفاء الذاتي (%)"].mean()
-              avg_fidr = temp_df["نسبة الاعتماد الاستيرادي (%)"].mean()
-              st.success(f"• **متوسط نسبة الاكتفاء الذاتي:** {avg_ssr:.2f}%\n• **متوسط نسبة الاعتماد الاستيرادي:** {avg_fidr:.2f}%")
+            temp_df["فترة كفاية الإنتاج (يوم)"] = np.where(
+                temp_df["إجمالي الاستهلاك المتاح"] > 0,
+                (temp_df[fs_prod] / temp_df["إجمالي الاستهلاك المتاح"])
+                * 365.25,
+                np.nan,
+            )
 
-              st.markdown("### 📊 تمثيل بياني لمؤشرات الأمن الغذائي:")
-              fig, ax = plt.subplots(figsize=(10, 4))
-              ax.plot(range(len(temp_df)), temp_df["نسبة الاكتفاء الذاتي (%)"], marker='o', color='green', label='الاكتفاء الذاتي (%)')
-              ax.plot(range(len(temp_df)), temp_df["نسبة الاعتماد الاستيرادي (%)"], marker='s', color='orange', label='الاعتماد الاستيرادي (%)')
-              ax.set_xlabel("المشاهدات / السنوات")
-              ax.set_ylabel("النسبة المئوية (%)")
-              ax.set_title("تطور مؤشرات الأمن الغذائي")
-              ax.legend()
-              st.pyplot(fig)
-            except Exception as ex:
-              st.error(f"حدث خطأ: {ex}")
+            if fs_pop and fs_pop != "None":
+              temp_df[fs_pop] = pd.to_numeric(
+                  temp_df[fs_pop], errors="coerce"
+              )
+              temp_df["نصيب الفرد من الاستهلاك المتاح"] = np.where(
+                  temp_df[fs_pop] > 0,
+                  temp_df["إجمالي الاستهلاك المتاح"] / temp_df[fs_pop],
+                  np.nan,
+              )
 
-      # 10. مؤشرات التجارة الخارجية (درجة أهمية الصادرات/الواردات للناتج والتبعية الاقتصادية)
+            st.dataframe(temp_df, use_container_width=True)
+
+            avg_app_gap = temp_df["الفجوة الغذائية الظاهرية"].mean()
+            avg_real_gap = temp_df["الفجوة الغذائية الحقيقية"].mean()
+            avg_adequacy = temp_df["فترة كفاية الإنتاج (يوم)"].mean()
+
+            st.success(
+                f"• **متوسط الفجوة الظاهرية:** {avg_app_gap:,.2f}\n• **متوسط"
+                f" الفجوة الحقيقية:** {avg_real_gap:,.2f}\n• **متوسط فترة كفاية"
+                f" الإنتاج المحلي:** {avg_adequacy:.1f} يوم"
+            )
+
+            st.markdown(
+                "### 📊 تمثيل بياني للفجوات الغذائية وفترة كفاية الإنتاج:"
+            )
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+            ax1.plot(
+                range(len(temp_df)),
+                temp_df["الفجوة الغذائية الظاهرية"],
+                marker="o",
+                color="red",
+                label="الفجوة الظاهرية",
+            )
+            ax1.plot(
+                range(len(temp_df)),
+                temp_df["الفجوة الغذائية الحقيقية"],
+                marker="s",
+                color="darkorange",
+                label="الفجوة الحقيقية",
+            )
+            ax1.set_xlabel("المشاهدات / السنوات")
+            ax1.set_ylabel("الكمية")
+            ax1.set_title("مقارنة الفجوة الظاهرية والفجوة الحقيقية")
+            ax1.legend()
+
+            ax2.bar(
+                range(len(temp_df)),
+                temp_df["فترة كفاية الإنتاج (يوم)"],
+                color="forestgreen",
+            )
+            ax2.set_xlabel("المشاهدات / السنوات")
+            ax2.set_ylabel("الأيام")
+            ax2.set_title("فترة كفاية الإنتاج المحلي (يوم)")
+
+            st.pyplot(fig)
+
+          except Exception as ex:
+            st.error(f"حدث خطأ أثناء الاحتساب: {ex}")
+
+      # 10. مؤشرات التجارة الخارجية والتبعية الاقتصادية
       elif model_choice == "10. مؤشرات التجارة الخارجية والتبعية الاقتصادية":
-        st.subheader("🌐 تحليل مؤشرات التجارة الخارجية (أهمية الصادرات والواردات للناتج ومؤشر التبعية)")
+        st.subheader(
+            "🌐 تحليل مؤشرات التجارة الخارجية (أهمية الصادرات والواردات للناتج"
+            " ومؤشر التبعية)"
+        )
         col1, col2, col3 = st.columns(3)
         with col1:
-          ft_exp = st.selectbox("اختر عمود إجمالي الصادرات (Exports):", columns_list, key="ft_ex")
+          ft_exp = st.selectbox(
+              "اختر عمود إجمالي الصادرات (Exports):", columns_list, key="ft_ex"
+          )
         with col2:
-          ft_imp = st.selectbox("اختر عمود إجمالي الواردات (Imports):", columns_list, key="ft_im")
+          ft_imp = st.selectbox(
+              "اختر عمود إجمالي الواردات (Imports):", columns_list, key="ft_im"
+          )
         with col3:
-          ft_gdp = st.selectbox("اختر عمود الناتج المحلي الإجمالي (GDP):", columns_list, key="ft_g")
+          ft_gdp = st.selectbox(
+              "اختر عمود الناتج المحلي الإجمالي (GDP):", columns_list, key="ft_g"
+          )
 
         if st.button("🚀 احتساب مؤشرات التجارة الخارجية والتبعية", key="btn_ft"):
           if ft_exp and ft_imp and ft_gdp:
             try:
               temp_df = df.copy()
-              temp_df[ft_exp] = pd.to_numeric(temp_df[ft_exp], errors='coerce')
-              temp_df[ft_imp] = pd.to_numeric(temp_df[ft_imp], errors='coerce')
-              temp_df[ft_gdp] = pd.to_numeric(temp_df[ft_gdp], errors='coerce')
+              temp_df[ft_exp] = pd.to_numeric(temp_df[ft_exp], errors="coerce")
+              temp_df[ft_imp] = pd.to_numeric(temp_df[ft_imp], errors="coerce")
+              temp_df[ft_gdp] = pd.to_numeric(temp_df[ft_gdp], errors="coerce")
               temp_df = temp_df.dropna(subset=[ft_exp, ft_imp, ft_gdp])
 
               temp_df["الميزان التجاري"] = temp_df[ft_exp] - temp_df[ft_imp]
-              # درجة أهمية الصادرات للناتج المحلي (%)
-              temp_df["درجة أهمية الصادرات للناتج (%)"] = (temp_df[ft_exp] / temp_df[ft_gdp]) * 100
-              # درجة أهمية الواردات للناتج المحلي (%)
-              temp_df["درجة أهمية الواردات للناتج (%)"] = (temp_df[ft_imp] / temp_df[ft_gdp]) * 100
-              # مؤشر التبعية الاقتصادية (إجمالي التجارة الخارجية / الناتج المحلي الإجمالي * 100)
-              temp_df["مؤشر التبعية الاقتصادية (إجمالي التجارة/الناتج %)"] = ((temp_df[ft_exp] + temp_df[ft_imp]) / temp_df[ft_gdp]) * 100
+              temp_df["درجة أهمية الصادرات للناتج (%)"] = (
+                  temp_df[ft_exp] / temp_df[ft_gdp]
+              ) * 100
+              temp_df["درجة أهمية الواردات للناتج (%)"] = (
+                  temp_df[ft_imp] / temp_df[ft_gdp]
+              ) * 100
+              temp_df["مؤشر التبعية الاقتصادية (إجمالي التجارة/الناتج %)"] = (
+                  (temp_df[ft_exp] + temp_df[ft_imp]) / temp_df[ft_gdp]
+              ) * 100
 
               st.dataframe(temp_df, use_container_width=True)
 
               avg_exp_gdp = temp_df["درجة أهمية الصادرات للناتج (%)"].mean()
               avg_imp_gdp = temp_df["درجة أهمية الواردات للناتج (%)"].mean()
-              avg_dep = temp_df["مؤشر التبعية الاقتصادية (إجمالي التجارة/الناتج %)"].mean()
+              avg_dep = temp_df[
+                  "مؤشر التبعية الاقتصادية (إجمالي التجارة/الناتج %)"
+              ].mean()
 
-              st.success(f"• **متوسط درجة أهمية الصادرات للناتج المحلي:** {avg_exp_gdp:.2f}%\n• **متوسط درجة أهمية الواردات للناتج المحلي:** {avg_imp_gdp:.2f}%\n• **متوسط مؤشر التبعية الاقتصادية والتجارية:** {avg_dep:.2f}%")
+              st.success(
+                  f"• **متوسط درجة أهمية الصادرات للناتج المحلي:**"
+                  f" {avg_exp_gdp:.2f}%\n• **متوسط درجة أهمية الواردات للناتج"
+                  f" المحلي:** {avg_imp_gdp:.2f}%\n• **متوسط مؤشر التبعية"
+                  f" الاقتصادية والتجارية:** {avg_dep:.2f}%"
+              )
 
-              st.markdown("### 📊 تمثيل بياني لأهمية الصادرات والواردات للناتج المحلي:")
+              st.markdown(
+                  "### 📊 تمثيل بياني لأهمية الصادرات والواردات للناتج المحلي:"
+              )
               fig, ax = plt.subplots(figsize=(10, 5))
               x = np.arange(len(temp_df))
               width = 0.35
-              ax.bar(x - width/2, temp_df["درجة أهمية الصادرات للناتج (%)"], width, label='أهمية الصادرات للناتج (%)', color='teal')
-              ax.bar(x + width/2, temp_df["درجة أهمية الواردات للناتج (%)"], width, label='أهمية الواردات للناتج (%)', color='coral')
+              ax.bar(
+                  x - width / 2,
+                  temp_df["درجة أهمية الصادرات للناتج (%)"],
+                  width,
+                  label="أهمية الصادرات للناتج (%)",
+                  color="teal",
+              )
+              ax.bar(
+                  x + width / 2,
+                  temp_df["درجة أهمية الواردات للناتج (%)"],
+                  width,
+                  label="أهمية الواردات للناتج (%)",
+                  color="coral",
+              )
               ax.set_xlabel("المشاهدات / السنوات")
               ax.set_ylabel("النسبة المئوية من الناتج المحلي (%)")
               ax.set_title("درجة أهمية الصادرات والواردات للناتج المحلي")
@@ -750,77 +940,124 @@ if app_mode == "📊 تحليل البيانات والنماذج القياسي
             except Exception as ex:
               st.error(f"حدث خطأ أثناء الحساب: {ex}")
           else:
-            st.warning("يرجى اختيار أعمدة الصادرات والواردات والناتج المحلي (GDP).")
+            st.warning(
+                "يرجى اختيار أعمدة الصادرات والواردات والناتج المحلي (GDP)."
+            )
 
-      # 11. مؤشرات القدرة التنافسية (الميزة النسبية الظاهرة، النصيب السوقي، معامل الاختراق، والسعر النسبي)
-      elif model_choice == "11. مؤشرات القدرة التنافسية (RCA, النصيب السوقي, الاختراق, السعر النسبي)":
-        st.subheader("🏆 تحليل القدرة التنافسية (الميزة النسبية الظاهرة، النصيب السوقي، الاختراق، السعر النسبي)")
-        
+      # 11. مؤشرات القدرة التنافسية (RCA, النصيب السوقي, الاختراق, السعر النسبي)
+      elif (
+          model_choice
+          == "11. مؤشرات القدرة التنافسية (RCA, النصيب السوقي, الاختراق, السعر النسبي)"
+      ):
+        st.subheader(
+            "🏆 تحليل القدرة التنافسية (الميزة النسبية الظاهرة، النصيب السوقي،"
+            " الاختراق، السعر النسبي)"
+        )
+
         c1, c2 = st.columns(2)
         with c1:
-          comp_x_ij = st.selectbox("صادرات الدولة من السلعة (X_ij):", columns_list, key="c_xij")
-          comp_x_it = st.selectbox("إجمالي صادرات الدولة (X_it):", columns_list, key="c_xit")
-          comp_imp = st.selectbox("إجمالي الواردات المحلية من السلعة (Imports):", columns_list, key="c_imp")
+          comp_x_ij = st.selectbox(
+              "صادرات الدولة من السلعة (X_ij):", columns_list, key="c_xij"
+          )
+          comp_x_it = st.selectbox(
+              "إجمالي صادرات الدولة (X_it):", columns_list, key="c_xit"
+          )
+          comp_imp = st.selectbox(
+              "إجمالي الواردات المحلية من السلعة (Imports):",
+              columns_list,
+              key="c_imp",
+          )
         with c2:
-          comp_x_wj = st.selectbox("الصادرات العالمية للسلعة (X_wj):", columns_list, key="c_xwj")
-          comp_x_wt = st.selectbox("إجمالي الصادرات العالمية (X_wt):", columns_list, key="c_xwt")
-          comp_prod = st.selectbox("الإنتاج المحلي للسلعة (Production):", columns_list, key="c_prod")
+          comp_x_wj = st.selectbox(
+              "الصادرات العالمية للسلعة (X_wj):", columns_list, key="c_xwj"
+          )
+          comp_x_wt = st.selectbox(
+              "إجمالي الصادرات العالمية (X_wt):", columns_list, key="c_xwt"
+          )
+          comp_prod = st.selectbox(
+              "الإنتاج المحلي للسلعة (Production):", columns_list, key="c_prod"
+          )
 
         c3, c4 = st.columns(2)
         with c3:
-          comp_local_price = st.selectbox("سعر التصدير المحلي (Local Price):", columns_list, key="c_lpr")
+          comp_local_price = st.selectbox(
+              "سعر التصدير المحلي (Local Price):", columns_list, key="c_lpr"
+          )
         with c4:
-          comp_ref_price = st.selectbox("السعر العالمي أو المنافس (Reference Price):", columns_list, key="c_rpr")
+          comp_ref_price = st.selectbox(
+              "السعر العالمي أو المنافس (Reference Price):",
+              columns_list,
+              key="c_rpr",
+          )
 
         if st.button("🚀 احتساب مؤشرات القدرة التنافسية المتكاملة", key="btn_comp_all"):
           try:
             temp_df = df.copy()
-            for col in [comp_x_ij, comp_x_it, comp_x_wj, comp_x_wt, comp_imp, comp_prod, comp_local_price, comp_ref_price]:
+            for col in [
+                comp_x_ij,
+                comp_x_it,
+                comp_x_wj,
+                comp_x_wt,
+                comp_imp,
+                comp_prod,
+                comp_local_price,
+                comp_ref_price,
+            ]:
               if col:
-                temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce')
+                temp_df[col] = pd.to_numeric(temp_df[col], errors="coerce")
 
-            # 1. الميزة النسبية الظاهرة (RCA)
             temp_df["الميزة النسبية الظاهرة (RCA)"] = np.where(
-                (temp_df[comp_x_it] > 0) & (temp_df[comp_x_wj] > 0) & (temp_df[comp_x_wt] > 0),
-                (temp_df[comp_x_ij] / temp_df[comp_x_it]) / (temp_df[comp_x_wj] / temp_df[comp_x_wt]),
-                np.nan
+                (temp_df[comp_x_it] > 0)
+                & (temp_df[comp_x_wj] > 0)
+                & (temp_df[comp_x_wt] > 0),
+                (temp_df[comp_x_ij] / temp_df[comp_x_it])
+                / (temp_df[comp_x_wj] / temp_df[comp_x_wt]),
+                np.nan,
             )
-
-            # 2. النصيب السوقي (Market Share %)
             temp_df["النصيب السوقي (%)"] = np.where(
                 temp_df[comp_x_wj] > 0,
                 (temp_df[comp_x_ij] / temp_df[comp_x_wj]) * 100,
-                np.nan
+                np.nan,
             )
-
-            # 3. معامل الاختراق الاستيرادي (Import Penetration Rate %)
-            cons = temp_df[comp_prod] + temp_df[comp_imp] - temp_df[comp_x_ij]
+            cons = (
+                temp_df[comp_prod] + temp_df[comp_imp] - temp_df[comp_x_ij]
+            )
             temp_df["معامل الاختراق الاستيرادي (%)"] = np.where(
-                cons > 0,
-                (temp_df[comp_imp] / cons) * 100,
-                np.nan
+                cons > 0, (temp_df[comp_imp] / cons) * 100, np.nan
             )
-
-            # 4. السعر النسبي (Relative Price)
             temp_df["السعر النسبي"] = np.where(
                 temp_df[comp_ref_price] > 0,
                 temp_df[comp_local_price] / temp_df[comp_ref_price],
-                np.nan
+                np.nan,
             )
 
             st.dataframe(temp_df, use_container_width=True)
 
             st.markdown("### 📊 تمثيل بياني لمؤشرات القدرة التنافسية:")
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-            
-            ax1.plot(range(len(temp_df)), temp_df["الميزة النسبية الظاهرة (RCA)"], marker='o', color='purple', lw=2)
-            ax1.axhline(1.0, color='red', linestyle='--', label='حد الميزة النسبية (1.0)')
+
+            ax1.plot(
+                range(len(temp_df)),
+                temp_df["الميزة النسبية الظاهرة (RCA)"],
+                marker="o",
+                color="purple",
+                lw=2,
+            )
+            ax1.axhline(
+                1.0, color="red", linestyle="--", label="حد الميزة النسبية (1.0)"
+            )
             ax1.set_title("مؤشر الميزة النسبية الظاهرة (RCA)")
             ax1.legend()
 
-            ax2.plot(range(len(temp_df)), temp_df["النصيب السوقي (%)"], marker='s', color='green', lw=2)
+            ax2.plot(
+                range(len(temp_df)),
+                temp_df["النصيب السوقي (%)"],
+                marker="s",
+                color="green",
+                lw=2,
+            )
             ax2.set_title("النصيب السوقي (%)")
-            
+
             st.pyplot(fig)
 
           except Exception as ex:
@@ -933,14 +1170,17 @@ elif app_mode == "🌐 بوابة جمع البيانات والمؤشرات":
 elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياسي":
   st.subheader("👨‍🏫 المستشار الاقتصادي والقياسي (التحليل الأكاديمي الموسع)")
   st.write(
-      "اطرح أي سؤال اقتصادي، قياسي، أو استفسار حول التجارة والتنافسية، وسيقوم"
-      " الخبير بتقديم إجابة أكاديمية **مُسهبة، عميقة، ومفصلة للغاية** مدعومة"
-      " بالمعادلات والمراجع الرسمية."
+      "اطرح أي سؤال اقتصادي، قياسي، أو استفسار حول الأمن الغذائي والفجوات،"
+      " التجارة، والتنافسية، وسيقوم الخبير بتقديم إجابة أكاديمية **مُسهبة، عميقة،"
+      " ومفصلة للغاية** مدعومة بالمعادلات والمراجع الرسمية."
   )
 
   user_question = st.text_area(
       "اكتب سؤالك أو استفسارك الاقتصادي هنا لشرحه بالتفصيل:",
-      placeholder="مثلاً: اشرح بالتفصيل مؤشر الميزة النسبية الظاهرة ومؤشرات التبعية التجارية...",
+      placeholder=(
+          "مثلاً: اشرح بالتفصيل الفجوة الغذائية الظاهرية والحقيقية وفترة كفاية"
+          " الإنتاج وصيغ الاتجاه العام..."
+      ),
       height=120,
   )
 
@@ -995,48 +1235,47 @@ elif app_mode == "👨‍🏫 المستشار الاقتصادي والقياس
 
         if not ai_response:
           q_lower = user_question.strip().lower()
-          if "ميزة" in q_lower or "نسبية" in q_lower or "rca" in q_lower:
-            ai_response = """### 🏛️ الدراسة التحليلية الموسعة: مؤشر الميزة النسبية الظاهرة (Revealed Comparative Advantage - RCA)
+          if "فجوه" in q_lower or "فجوة" in q_lower or "كفاية" in q_lower:
+            ai_response = """### 🌾 الدراسة التحليلية الموسعة: الفجوة الغذائية (الظاهرية والحقيقية) وفترة كفاية الإنتاج
 
-#### 1. الإطار النظري والمفهوم الاقتصادي:
-يُعد مؤشر الميزة النسبية الظاهرة (الذي وضعه العالم بالاصل **Balassa, 1965**) من أهم المعايير الكمية المستخدمة في تحليل التجارة الدولية والاقتصاد الزراعي لقياس كفاءة وقدرة الدولة على تصدير سلعة زراعية معينّة مقارنةً بالهيكل التصديري العالمي. وكلمة "ظاهرة" تعني أنه يعتمد على البيانات الفعلية المتحققة للتجارة الخارجية وليس على التكاليف النظرية.
+#### 1. مفهوم الفجوة الغذائية الظاهرية والحقيقية:
+- **الفجوة الظاهرية (Apparent Gap):** تُحسب كحاصل طرح الإنتاج المحلي من إجمالي الاستهلاك المحلي المتاح ($الاستهلاك - الإنتاج$). وتسمى "ظاهرية" لأنها تعتمد على الكميات المتاحة إجمالاً دون استبعاد التالف والفاقد في مراحل الحصاد والتخزين والتسويق.
+- **الفجوة الحقيقية (Real Gap):** تعكس العجز الفعلي الحقيقي، حيث يتم فيها احتساب الإنتاج الصافي الفعلي المتاح للاستهلاك الآدمي (بعد استبعاد نسب الفاقد والتلف المتراكمة)، مما يعطي دلالة أدق لصناع القرار حول العجز الغذائي الحقيقي.
 
-#### 2. الصيغة الرياضية الدقيقة:
-$$RCA_{ij} = \\frac{X_{ij} / X_{it}}{X_{wj} / X_{wt}}$$
-- **$X_{ij}$:** صادرات الدولة من السلعة.
-- **$X_{it}$:** إجمالي صادرات الدولة.
-- **$X_{wj}$:** الصادرات العالمية للسلعة.
-- **$X_{wt}$:** إجمالي الصادرات العالمية الكلية.
-
-#### 3. المعيار التفسيري:
-- إذا كان الناتچ أكبر من الواحد ($RCA > 1$)، فهذا يعكس وجود **ميزة نسبية ظاهرة** وقدرة تنافسية تصديرية عالية للسلعة في الأسواق الدولية.
-- إذا كان أقل من الواحد ($RCA < 1$)، فهذا يشير إلى غياب الميزة النسبية وض ضعف القدرة التنافسية.
+#### 2. مؤشر فترة كفاية الإنتاج المحلي (Production Adequacy Period):
+- يُقيس هذا المؤشر عدد الأيام أو الشهور التي يستطيع فيها الإنتاج المحلي وحده تغطية الاستهلاك المحلي دون اللجوء إلى الاستيراد.
+- **الصيغة الرياضية:** 
+  $$\text{فترة الكفاية (بالأيام)} = \left( \frac{\text{الإنتاج المحلي}}{\text{إجمالي الاستهلاك المتاح}} \right) \times 365.25$$
+- **الدلالة الاقتصادية:** كلما زادت فترة الكفاية اقتراباً من 365 يوماً، كلما تعززت درجة الأمن القومي الغذائي وأصبح الاقتصاد أقل عرضة لصدمات الأسواق وسلاسل الإمداد العالمية.
 
 ---
 📚 **المراجع والمصادر الأكاديمية:**
-1. Balassa, B. (1965). *Trade Liberalisation and “Revealed” Comparative Advantage*. The Manchester School, 33(2).
-2. FAO (2020). *Agricultural Trade Policy and Competitiveness*: FAO Economic Papers."""
+1. FAO (2021). *The State of Food Security and Nutrition in the World*. Rome.
+2. World Bank (2020). *Food Security Assessment Methodologies*."""
 
-          elif "تجارة" in q_lower or "تبعية" in q_lower or "صادرات" in q_lower or "ناتج" in q_lower:
-            ai_response = """### 🏛️ الدراسة التحليلية الموسعة: مؤشرات التجارة الخارجية والتبعية الاقتصادية
+          elif "اتجاه" in q_lower or "نمو" in q_lower or "خطي" in q_lower or "أسي" in q_lower:
+            ai_response = """### 📈 الدراسة التحليلية الموسعة: تحليل الاتجاه العام وصيغ النمو الزمنية
 
-#### 1. درجة أهمية الصادرات والواردات للناتج المحلي الإجمالي (GDP Openness):
-- **أهمية الصادرات:** تقيس مدى نجاح القطاع الإنتاجي والزراعي في النفاذ للأسواق العالمية وجلب النقد الأجنبي.
-- **أهمية الواردات:** تعكس مدى اعتماد الاقتصاد على توفير السلع الغذائية ومستلزمات الإنتاج من الأسواق الخارجية.
+#### 1. الأهمية الاقتصادية والقياسية:
+يُعد تحليل الاتجاه العام (Trend Analysis) الأداة الأساسية لدراسة التطور التاريخي للسلاسل الزمنية للمتغيرات الاقتصادية والزراعية (مثل الإنتاج، الإنتاجية، الصادرات، والاستهلاك). وهدفه الرئيسي هو فصل التغيرات طويلة الأجل عن التقلبات الموسمية أو العرضية قصيرة الأجل.
 
-#### 2. مؤشر التبعية الاقتصادية والتجارية:
-يقيس مدى تعرض الاقتصاد القومي للصدمات الخارجية (مثل تقلبات الأسعار العالمية وسلاسل الإمداد). وكلما ارتفعت نسبة إجمالي التجارة (أو الواردات) إلى الناتج المحلي الإجمالي، زادت حساسية الاقتصاد للصدمات الخارجية وتطلبت سياسات استباقية لتحقيق الأمن الغذائي المستدام.
+#### 2. الصيغ الرياضية الشائعة:
+- **الصيغة الخطية (Linear Trend):** $Y_t = \beta_0 + \beta_1 T + \epsilon_t$
+  - تُستخدم عندما يكون التغير السنوي للمتغير بمقدار **ثابت ومطلق** (كمية ثابتة كل سنة).
+- **الصيغة الأسية / دالة النمو (Exponential/Log-Linear Trend):** $\ln(Y_t) = \beta_0 + \beta_1 T + \epsilon_t$
+  - تُستخدم لقياس **معدل النمو السنوي المركب (CAGR)**، حيث يفترض النموذج أن المتغير ينمو بمعدل نسبي/مئوي ثابت عبر الزمن. ويُحسب معدل النمو المئوي كالتالي:
+  $$\text{معدل النمو \%} = (\exp(\beta_1) - 1) \times 100$$
 
 ---
 📚 **المراجع والمصادر الأكاديمية:**
-1. Krugman, P. R., & Obstfeld, M. (2018). *International Economics: Theory and Policy*. Pearson.
-2. UNCTAD (2022). *Handbook of Statistics on International Trade*."""
+1. Gujarati, D. N., & Porter, D. C. (2009). *Basic Econometrics*. McGraw-Hill.
+2. Pindyck, R. S., & Rubinfeld, D. L. (1998). *Econometric Models and Economic Forecasts*. McGraw-Hill."""
 
           else:
             ai_response = f"""### 💡 الاستشارة الأكاديمية الموسعة حول: "{user_question}"
 
 #### 1. التحليل المنهجي والنظري:
-في بحوث الاقتصاد الزراعي والقياسي، يتطلب تحليل هذه القضية دمج النظريات الاقتصادية الجزئية والكلية لفهم سلوك المنتجين والمستهلكين وتأثير السياسات التجارية والنقدية.
+في بحوث الاقتصاد الزراعي والقياسي، يتطلب تحليل هذه الظاهرة دمج النظريات الاقتصادية الجزئية والكلية لفهم سلوك المنتجين والمستهلكين وتأثير السياسات التجارية والنقدية.
 
 #### 2. التوجيه التطبيقي:
 يمكنك استخدام أقسام المنصة المتعددة لتطبيق النماذج القياسية أو استيراد بيانات الدول مباشرة عبر بوابة البيانات وتصدير النتائج فوراً.
