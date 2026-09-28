@@ -65,8 +65,8 @@ if not check_password():
 st.title("🌾 منصة الخبير الاقتصادي والقياسي الذكي (الإصدار الشامل الكامل)")
 st.write(
     "منصة بحثية وأكاديمية متكاملة تضم كافة اختبارات جذر الوحدة، نماذج السلاسل"
-    " الزمنية، تحليل الاتجاه العام، دوّال الإنتاج، التقييم المالي ودراسات"
-    " الجدوى."
+    " الزمنية، تحليل الاتجاه العام، دوّال الإنتاج، الحدود الاستوخاستيكية، التقييم"
+    " المالي ومؤشرات القدرة التنافسية."
 )
 
 st.sidebar.header("⚙️ إعدادات المنصة")
@@ -77,7 +77,7 @@ st.sidebar.markdown(
     "**المرجع التقني والبرمجي:**\n"
     "- **لغة البرمجة:** Python\n"
     "- **المكتبات المستخدمة:** Statsmodels, Pandas, SciPy, NumPy, Streamlit\n"
-    "**الإصدار:** 2026 الشامل والمحدث بكافة النماذج"
+    "**الإصدار:** 2026 الشامل والمحدث بكافة النماذج والتنافسية"
 )
 st.sidebar.markdown("---")
 
@@ -138,11 +138,15 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
             "3. دالة الإنتاج التربيعية وقياس تناقص الغلة",
             "4. تحليل الاتجاه الزمني (خطي وأسي/معدل النمو المركب CAGR)",
             "5. تحليل الكفاءة باستخدام مغلف البيانات (DEA)",
-            "6. الهوامش التسويقية ونصيب المزارع",
-            "7. تحليل التكاليف وصافي العائد الاقتصادي",
-            "8. مؤشرات الأمن الغذائي والفجوات وفترة الكفاية",
-            "9. مؤشرات التجارة الخارجية ومؤشر الميزة النسبية (RCA)",
-            "10. معاملات الارتباط (بيرسون وسبيرمان) واختبارات T-Test و ANOVA",
+            "6. تحليل الحدود الاستوخاستيكية (Stochastic Frontier Analysis - SFA)",
+            "7. الهوامش التسويقية ونصيب المزارع",
+            "8. تحليل التكاليف وصافي العائد الاقتصادي",
+            "9. مؤشرات الأمن الغذائي والفجوات وفترة الكفاية",
+            (
+                "10. مؤشرات التجارة الخارجية والقدرة التنافسية (RCA, النصيب"
+                " السوقي، الاختراق، السعر النسبي)"
+            ),
+            "11. معاملات الارتباط (بيرسون وسبيرمان) واختبارات T-Test و ANOVA",
         ],
     )
 
@@ -282,12 +286,10 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         t = t_data[t_var]
         y = t_data[y_var]
 
-        # 1. الاتجاه الخطي
         X_lin = sm.add_constant(t)
         m_lin = sm.OLS(y, X_lin).fit()
         b_lin = m_lin.params[t_var]
 
-        # 2. الاتجاه الآسي اللوغاريتمى
         log_y = np.log(y.replace(0, np.nan)).dropna()
         X_exp = sm.add_constant(t.loc[log_y.index])
         m_exp = sm.OLS(log_y, X_exp).fit()
@@ -340,6 +342,57 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         show_program_credit()
 
     elif sub_choice.startswith("6"):
+      st.subheader(
+          "📐 تحليل الحدود الاستوخاستيكية (Stochastic Frontier Analysis -"
+          " SFA)"
+      )
+      st.write(
+          "تقدير دالة الحدود الإنتاجية الاستوخاستيكية باستخدام طريقة المربعات"
+          " الصغرى المصححة (COLS) لتقدير الكفاءة الفنية."
+      )
+      c1, c2 = st.columns(2)
+      with c1:
+        y_sfa = st.selectbox(
+            "المتغير التابع (الإنتاج Y):", columns_list, key="sfa_y"
+        )
+      with c2:
+        x_sfa = st.multiselect(
+            "المدخلات المستقلة:",
+            [c for c in columns_list if c != y_sfa],
+            key="sfa_x",
+        )
+      if st.button("تقدير حدود SFA والكفاءة الفنية") and y_sfa and x_sfa:
+        sfa_df = (
+            df[[y_sfa] + x_sfa].apply(pd.to_numeric, errors="coerce").dropna()
+        )
+        sfa_df = sfa_df[(sfa_df > 0).all(axis=1)]
+        df_log = np.log(sfa_df)
+        X_sfa = sm.add_constant(df_log[x_sfa])
+        model_ols = sm.OLS(df_log[y_sfa], X_sfa).fit()
+
+        residuals = model_ols.resid
+        max_res = residuals.max()
+        corrected_intercept = model_ols.params["const"] + max_res
+        u_estimated = -(residuals - max_res)
+        te_scores = np.exp(-u_estimated)
+
+        st.text(model_ols.summary().as_text())
+        st.markdown("### 📊 نتائج تقدير الحدود الاستوخاستيكية:")
+        st.metric(
+            "الحد الثابت المعدل (Corrected Intercept)",
+            f"{corrected_intercept:.4f}",
+        )
+        st.metric(
+            "متوسط كفاءة الوحدات (Mean Technical Efficiency)",
+            f"{te_scores.mean() * 100:.2f}%",
+        )
+
+        sfa_res_df = sfa_df.copy()
+        sfa_res_df["معامل الكفاءة الفنية (TE)"] = te_scores
+        st.dataframe(sfa_res_df, use_container_width=True)
+        show_program_credit()
+
+    elif sub_choice.startswith("7"):
       st.subheader("💰 الهوامش التسويقية ونصيب المزارع")
       c1, c2 = st.columns(2)
       with c1:
@@ -361,7 +414,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         st.dataframe(m_df, use_container_width=True)
         show_program_credit()
 
-    elif sub_choice.startswith("7"):
+    elif sub_choice.startswith("8"):
       st.subheader("💸 تحليل التكاليف وصافي العائد الاقتصادي")
       rev_col = st.selectbox(
           "متغير إجمالي الإيرادات الكلية (Total Revenue):",
@@ -382,7 +435,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         st.dataframe(c_df, use_container_width=True)
         show_program_credit()
 
-    elif sub_choice.startswith("8"):
+    elif sub_choice.startswith("9"):
       st.subheader("🌾 مؤشرات الأمن الغذائي والفجوات وفترة الكفاية الذاتية")
       c1, c2 = st.columns(2)
       with c1:
@@ -401,28 +454,81 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         st.dataframe(f_df, use_container_width=True)
         show_program_credit()
 
-    elif sub_choice.startswith("9"):
-      st.subheader("🌐 مؤشرات التجارة الخارجية ومؤشر الميزة النسبية (RCA)")
-      st.write("حساب مؤشر التجارة ومؤشرات التنافسية الدولية.")
+    elif sub_choice.startswith("10"):
+      st.subheader(
+          "🌐 مؤشرات التجارة الخارجية والقدرة التنافسية (RCA, النصيب السوقي،"
+          " الاختراق، السعر النسبي)"
+      )
+      st.write(
+          "حساب مؤشرات التنافسية الدولية والقدرة التصديرية والاختراق المحلي."
+      )
       num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-      if len(num_cols) >= 2:
-        x_exp = st.selectbox("صادرات السلعة المدروسة للبلد:", num_cols, key="xe")
-        tot_exp = st.selectbox(
-            "إجمالي صادرات البلد:",
-            [c for c in num_cols if c != x_exp],
-            key="te",
-        )
-        if st.button("حساب مؤشر الميزة النسبية الظاهرة (RCA)"):
-          rca_df = (
-              df[[x_exp, tot_exp]].apply(pd.to_numeric, errors="coerce").dropna()
+      if len(num_cols) >= 4:
+        c1, c2 = st.columns(2)
+        with c1:
+          x_exp = st.selectbox(
+              "صادرات السلعة المدروسة (X):", num_cols, key="comp_x"
           )
-          rca_df["RCA Index"] = rca_df[x_exp] / rca_df[tot_exp]
-          st.dataframe(rca_df, use_container_width=True)
+          tot_exp = st.selectbox(
+              "إجمالي الصادرات الكلية (Total X):",
+              [c for c in num_cols if c != x_exp],
+              key="comp_totx",
+          )
+        with c2:
+          imp_col = st.selectbox(
+              "الوارادت الكلية للسلعة (Imports - M):",
+              [c for c in num_cols if c not in [x_exp, tot_exp]],
+              key="comp_m",
+          )
+          prod_col = st.selectbox(
+              "الإنتاج المحلي المتاح (Production):",
+              [c for c in num_cols if c not in [x_exp, tot_exp, imp_col]],
+              key="comp_prod",
+          )
+
+        world_tot_exp = st.number_input(
+            "إجمالي الصادرات العالمية (اختياري - لحساب النصيب السوقي العالمي):",
+            value=1000000.0,
+        )
+
+        if st.button("🚀 حساب مؤشرات القدرة التنافسية الشاملة"):
+          comp_df = (
+              df[[x_exp, tot_exp, imp_col, prod_col]]
+              .apply(pd.to_numeric, errors="coerce")
+              .dropna()
+          )
+
+          # 1. الميزة النسبية الظاهرة (RCA) افتراضاً مقارنة بالتجارة الكلية
+          comp_df["1. الميزة النسبية الظاهرة (RCA)"] = (
+              comp_df[x_exp] / comp_df[tot_exp]
+          ) / (
+              1.0
+          )  # مبسط أو معيار عالمي إن توفر
+
+          # 2. النصيب السوقي (Market Share)
+          comp_df["2. النصيب السوقي (%)"] = (
+              comp_df[x_exp] / world_tot_exp
+          ) * 100
+
+          # 3. معامل الاختراق المحلي (Import Penetration Ratio)
+          domestic_supply = (
+              comp_df[prod_col] + comp_df[imp_col] - comp_df[x_exp]
+          )
+          comp_df["3. معامل الاختراق المحلي (%)"] = (
+              comp_df[imp_col] / domestic_supply.replace(0, np.nan)
+          ) * 100
+
+          # 4. معدل التغطية التجاري
+          comp_df["4. معدل التغطية الصادرات للواردات (%)"] = (
+              comp_df[x_exp] / comp_df[imp_col].replace(0, np.nan)
+          ) * 100
+
+          st.dataframe(comp_df, use_container_width=True)
           show_program_credit()
       else:
-        st.info("الرجاء توفر أعمدة رقمية كافية بالملف.")
+        st.info("الرجاء توفر 4 أعمدة رقمية على الأقل في الملف لحساب التنافسية.")
 
-    elif sub_choice.startswith("10"):
+    elif sub_choice.startswith("11"):
       st.subheader("📊 معاملات الارتباط (بيرسون وسبيرمان) واختبارات T و ANOVA")
       num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
       sel_corr = st.multiselect("اختر المتغيرات لحساب مصفوفة الارتباط:", num_cols)
@@ -579,18 +685,6 @@ elif (
             )
         except Exception as e:
           st.error(f"خطأ أثناء تنفيذ التكامل المشترك: {e}")
-
-        st.markdown("---")
-        st.markdown("### 🌐 اختبار جوهانسن للتكامل المشترك (Johansen Test):")
-        try:
-          from statsmodels.tsa.vector_ar.vecm import coin_johansen
-
-          j_df = temp_c[[y_var, x_var]]
-          j_res = coin_johansen(j_df, det_order=0, k_ar_diff=1)
-          st.write(f"- **Trace Statistic:** `{j_res.lr1}`")
-          st.write(f"- **Critical Values (95%):** `{j_res.cvt[:, 1]}`")
-        except Exception as ex:
-          st.info(f"ملاحظة في اختبار جوهانسن: {ex}")
 
         show_program_credit()
 
@@ -812,7 +906,8 @@ elif (
   if prompt_text:
     st.write(f"**استفسارك:** {prompt_text}")
     st.success(
-        "💡 **توجيه الخبير:** يمكنك الاعتماد على نماذج ARIMA و ECM واختبارات ADF"
-        " لضمان خلو سلسلتك الزمنية من الثبات الوهمي وتحقيق دقة تنبؤ عالية."
+        "💡 **توجيه الخبير:** يمكنك الاعتماد على نماذج الحدود الاستوخاستيكية (SFA)"
+        " ومعاملات التنافسية مثل الميزة النسبية واختبارات ADF لضمان دقة تحليلية"
+        " فائقة."
     )
     show_program_credit()
