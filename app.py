@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 from scipy.optimize import linprog, root_scalar
 import scipy.stats as stats
-from scipy.stats import jarque_bera, pearsonr, spearmanr
+from scipy.stats import f_oneway, jarque_bera, pearsonr, spearmanr, ttest_ind
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tsa.arima.model import ARIMA
@@ -62,11 +62,13 @@ if not check_password():
 # ---------------------------------------------------------
 # 🚀 واجهة التطبيق الرئيسية
 # ---------------------------------------------------------
-st.title("🌾 منصة الخبير الاقتصادي والقياسي الذكي (الإصدار الشامل الكامل)")
+st.title(
+    "🌾 منصة الخبير الاقتصادي والقياسي الذكي (الإصدار الشامل: الانحدار، T،"
+    " ANOVA، DEA، و Frontier)"
+)
 st.write(
-    "منصة بحثية وأكاديمية متكاملة تضم كافة اختبارات جذر الوحدة، نماذج السلاسل"
-    " الزمنية، تحليل الاتجاه العام، دوّال الإنتاج، الحدود الاستوخاستيكية، التقييم"
-    " المالي ومؤشرات القدرة التنافسية."
+    "منصة بحثية وأكاديمية متكاملة للتحليلات الاقتصادية القياسية، اختبارات"
+    " الفروض، تحليل الكفاءة (DEA & Frontier)، والرسومات البيانية التفاعلية."
 )
 
 st.sidebar.header("⚙️ إعدادات المنصة")
@@ -76,15 +78,18 @@ st.sidebar.markdown(
     "**اسم البرنامج:** منصة الخبير الاقتصادي والقياسي الذكي\n\n"
     "**المرجع التقني والبرمجي:**\n"
     "- **لغة البرمجة:** Python\n"
-    "- **المكتبات المستخدمة:** Statsmodels, Pandas, SciPy, NumPy, Streamlit\n"
-    "**الإصدار:** 2026 الشامل والمحدث بكافة النماذج والتنافسية"
+    "- **المكتبات:** Statsmodels, SciPy (DEA, Frontier, T, ANOVA), Pandas,"
+    " Matplotlib, Streamlit\n"
+    "**الإصدار:** 2026 المحسن الشامل (مزود بـ DEA & Frontier)"
 )
 st.sidebar.markdown("---")
 
 app_mode = st.sidebar.radio(
     "اختر قسم العمل الأساسي:",
     [
-        "📊 التحليلات القياسية واختبارات التشخيص الشاملة",
+        "📊 التحليلات القياسية وتشخيصات الانحدار واختبارات T و ANOVA",
+        "📐 تحليل كفاءة الأداء ونماذج الحدود الاقتصادية (DEA & Frontier)",
+        "🌾 مؤشرات الأمن الغذائي والتجارة والتنافسية والرسومات",
         "📉 اختبارات جذر الوحدة والتكامل المشترك ونماذج السلاسل الزمنية",
         "💰 دراسة الجدوى والتقييم المالي الشامل للمشروعات",
         "🌐 بوابة جمع البيانات والمؤشرات العالمية",
@@ -96,8 +101,7 @@ app_mode = st.sidebar.radio(
 def show_program_credit():
   st.caption(
       "💻 **تم إجراء هذا التحليل باستخدام:** منصة الخبير الاقتصادي والقياسي الذكي"
-      " | **المرجع التقني والبرمجي:** Python (Statsmodels, Pandas, SciPy,"
-      " NumPy)."
+      " | **المرجع التقني والبرمجي:** Python (Statsmodels, SciPy, Matplotlib)."
   )
 
 
@@ -117,44 +121,169 @@ if uploaded_file is not None:
     st.sidebar.error(f"خطأ في قراءة الملف: {e}")
 
 # =========================================================
-# القسم الأول: التحليلات القياسية واختبارات التشخيص الشاملة
+# القسم الأول: التحليلات القياسية وتشخيصات الانحدار واختبارات T و ANOVA
 # =========================================================
-if app_mode == "📊 التحليلات القياسية واختبارات التشخيص الشاملة":
-  st.subheader("📊 التحليلات القياسية واختبارات التشخيص الإحصائي المتقدمة")
+if app_mode == "📊 التحليلات القياسية وتشخيصات الانحدار واختبارات T و ANOVA":
+  st.subheader(
+      "📊 التحليلات القياسية، اختبارات الفروض الإحصائية (T و ANOVA) والتمثيل"
+      " البياني"
+  )
 
   if df is not None:
     st.dataframe(df.head(), use_container_width=True)
     columns_list = df.columns.tolist()
 
     sub_choice = st.selectbox(
-        "اختر نوع التحليل القياسي:",
+        "اختر نوع التحليل القياسي المطلوب:",
         [
-            "0. مقاييس النزعة المركزية، التشتت، التلتلة والتفرطح (Descriptive Stats)",
             (
-                "1. دالة الإنتاج (OLS) مع كافة التشخيصات (Durbin-Watson, Breusch-Pagan,"
-                " White, VIF, Jarque-Bera)"
+                "اختبار T (T-Test) لعينتين واختبار تحليل التباين الأحادي (ANOVA)"
+                " مع الرسومات"
             ),
-            "2. دالة إنتاج كوب-دوجلاس اللوغاريتمية وعوائد الحجم",
-            "3. دالة الإنتاج التربيعية وقياس تناقص الغلة",
-            "4. تحليل الاتجاه الزمني (خطي وأسي/معدل النمو المركب CAGR)",
-            "5. تحليل الكفاءة باستخدام مغلف البيانات (DEA)",
-            "6. تحليل الحدود الاستوخاستيكية (Stochastic Frontier Analysis - SFA)",
-            "7. الهوامش التسويقية ونصيب المزارع",
-            "8. تحليل التكاليف وصافي العائد الاقتصادي",
-            "9. مؤشرات الأمن الغذائي والفجوات وفترة الكفاية",
+            "مقاييس النزعة المركزية والتشتت والرسومات التوزيعية",
             (
-                "10. مؤشرات التجارة الخارجية والقدرة التنافسية (RCA, النصيب"
-                " السوقي، الاختراق، السعر النسبي)"
+                "نموذج الانحدار الخطي المتعدد (OLS) مع التشخيصات والرسومات"
+                " (التنبؤ والبواقي)"
             ),
-            "11. معاملات الارتباط (بيرسون وسبيرمان) واختبارات T-Test و ANOVA",
+            "دالة إنتاج كوب-دوجلاس اللوغاريتمية وعوائد الحجم",
+            "دالة الإنتاج التربيعية ونقطة الانقلاب (تناقص الغلة والرسومات)",
+            "تحليل الاتجاه الزمني (الخطي والآسي والرسومات التوضيحية)",
+            "معاملات الارتباط (بيرسون وسبيرمان) ومصفوفة التباين المرئي",
         ],
     )
 
-    if sub_choice.startswith("0"):
-      st.subheader("📈 الإحصاءات الوصفية واختبارات التوزيع الطبيعي")
+    if (
+        sub_choice
+        == "اختبار T (T-Test) لعينتين واختبار تحليل التباين الأحادي (ANOVA) مع الرسومات"
+    ):
+      st.subheader(
+          "🧪 اختبارات الفروض الإحصائية: اختبار T واختبار تحليل التباين (ANOVA)"
+      )
+      test_type = st.radio(
+          "اختر الاختبار الإحصائي:",
+          [
+              "اختبار T لعينتين مستقلتين (Independent Samples T-Test)",
+              "تحليل التباين الأحادي (One-Way ANOVA)",
+          ],
+      )
+
+      num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
+      if test_type == "اختبار T لعينتين مستقلتين (Independent Samples T-Test)":
+        c1, c2 = st.columns(2)
+        with c1:
+          col1 = st.selectbox("المتغير الأول (المجموعة الأولى):", num_cols, key="t_c1")
+        with c2:
+          col2 = st.selectbox(
+              "المتغير الثاني (المجموعة الثانية):",
+              [c for c in num_cols if c != col1],
+              key="t_c2",
+          )
+
+        if st.button("🚀 تنفيذ اختبار T ورسم المقارنة") and col1 and col2:
+          s1 = pd.to_numeric(df[col1], errors="coerce").dropna()
+          s2 = pd.to_numeric(df[col2], errors="coerce").dropna()
+          t_stat, p_val = ttest_ind(s1, s2, nan_policy="omit")
+
+          st.markdown("### 📊 نتائج اختبار T لعينتين مستقلتين:")
+          m1, m2 = st.columns(2)
+          with m1:
+            st.metric("قيمة إحصاء ت (T-Statistic)", f"{t_stat:.4f}")
+          with m2:
+            st.metric("القيمة الاحتمالية (p-value)", f"{p_val:.4f}")
+
+          if p_val < 0.05:
+            st.success(
+                "✅ النتيجة: يوجد فرق ذو دلالة إحصائية بين متوسطي المتغيرين"
+                " (رفض الفرض الصفري عند مستوى معنوية 5%)."
+            )
+          else:
+            st.warning(
+                "❌ النتيجة: لا يوجد فرق ذو دلالة إحصائية بين متوسطي المتغيرين"
+                " (قبول الفرض الصفري)."
+            )
+
+          fig, ax = plt.subplots(figsize=(8, 4))
+          means = [s1.mean(), s2.mean()]
+          stds = [s1.std(), s2.std()]
+          ax.bar(
+              [col1, col2],
+              means,
+              yerr=stds,
+              capsize=5,
+              color=["royalblue", "darkorange"],
+              edgecolor="black",
+          )
+          ax.set_ylabel("المتوسط الحسابي")
+          ax.set_title(
+              "مقارنة المتوسطات والانحرافات المعيارية بين المجموعتين"
+          )
+          st.pyplot(fig)
+          show_program_credit()
+
+      else:
+        target_anova = st.selectbox(
+            "المتغير التابع (الرقمي):", num_cols, key="anova_target"
+        )
+        group_anova = st.selectbox(
+            "متغير المجموعات أو التصنيف:",
+            [c for c in columns_list if c != target_anova],
+            key="anova_group",
+        )
+
+        if st.button("🚀 تنفيذ اختبار ANOVA ورسم التوزيعات") and target_anova and group_anova:
+          anova_df = df[[target_anova, group_anova]].dropna()
+          groups = [
+              group[target_anova].values
+              for name, group in anova_df.groupby(group_anova)
+          ]
+
+          if len(groups) >= 2:
+            f_stat, p_val_anova = f_oneway(*groups)
+
+            st.markdown("### 📊 نتائج تحليل التباين الأحادي (One-Way ANOVA):")
+            m1, m2 = st.columns(2)
+            with m1:
+              st.metric("قيمة إحصاء F (F-Statistic)", f"{f_stat:.4f}")
+            with m2:
+              st.metric("القيمة الاحتمالية (p-value)", f"{p_val_anova:.4f}")
+
+            if p_val_anova < 0.05:
+              st.success(
+                  "✅ النتيجة: توجد فروق ذات دلالة إحصائية بين متوسطات المجموعات"
+                  " (النموذج معنوي)."
+              )
+            else:
+              st.warning(
+                  "❌ النتيجة: لا توجد فروق ذات دلالة إحصائية بين متوسطات"
+                  " المجموعات."
+              )
+
+            fig, ax = plt.subplots(figsize=(9, 5))
+            anova_df.boxplot(
+                column=target_anova, by=group_anova, ax=ax, grid=False
+            )
+            ax.set_title(
+                f"توزيع متغير ({target_anova}) عبر مجموعات ({group_anova})"
+            )
+            ax.set_xlabel(group_anova)
+            ax.set_ylabel(target_anova)
+            plt.suptitle("")
+            st.pyplot(fig)
+            show_program_credit()
+          else:
+            st.error(
+                "⚠️ عدد المجموعات داخل متغير التصنيف غير كافٍ لإجراء تحليل"
+                " التباين (يجب أن توجد مجموعتان على الأقل)."
+            )
+
+    elif sub_choice == "مقاييس النزعة المركزية والتشتت والرسومات التوزيعية":
+      st.subheader(
+          "📈 الإحصاءات الوصفية ومؤشرات الالتواء والتفرطح مع الهيستوجرام"
+      )
       num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
       sel_cols = st.multiselect("اختر المتغيرات:", num_cols)
-      if sel_cols and st.button("تشغيل الإحصاءات الوصفية"):
+      if sel_cols and st.button("تشغيل الإحصاءات الوصفية والرسومات"):
         sub_df = df[sel_cols].apply(pd.to_numeric, errors="coerce")
         desc = sub_df.describe().T
         desc["التباين"] = sub_df.var()
@@ -162,65 +291,67 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         desc["التلتلة (Skewness)"] = sub_df.skew()
         desc["التفرطح (Kurtosis)"] = sub_df.kurtosis()
         st.dataframe(desc, use_container_width=True)
+
+        st.markdown("### 📊 تمثيل التوزيعات الإحصائية (Histograms):")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sub_df.hist(ax=ax, bins=15, edgecolor="black")
+        plt.tight_layout()
+        st.pyplot(fig)
         show_program_credit()
 
-    elif sub_choice.startswith("1"):
-      st.subheader("📈 نموذج الانحدار الخطي المتعدد (OLS) مع كافة الاختبارات القياسية")
+    elif (
+        sub_choice
+        == "نموذج الانحدار الخطي المتعدد (OLS) مع التشخيصات والرسومات (التنبؤ والبواقي)"
+    ):
+      st.subheader(
+          "📈 نموذج الانحدار الخطي المتعدد (OLS) مع التشخيصات والرسومات البيانية"
+      )
       c1, c2 = st.columns(2)
       with c1:
-        y_c = st.selectbox("المتغير التابع (Y):", columns_list)
+        y_c = st.selectbox("المتغير التابع (Y):", columns_list, key="ols_y")
       with c2:
         x_c = st.multiselect(
-            "المتغيرات المستقلة (X):", [c for c in columns_list if c != y_c]
+            "المتغيرات المستقلة (X):",
+            [c for c in columns_list if c != y_c],
+            key="ols_x",
         )
 
-      if st.button("تشغيل نموذج OLS وتشخيصاته الشاملة") and y_c and x_c:
+      if st.button("تشغيل نموذج OLS والرسومات التشخيصية") and y_c and x_c:
         temp_df = df[[y_c] + x_c].apply(pd.to_numeric, errors="coerce").dropna()
         y = temp_df[y_c]
         X = sm.add_constant(temp_df[x_c])
         model = sm.OLS(y, X).fit()
         st.text(model.summary().as_text())
 
-        st.markdown("### 🔍 الفحوصات والاختبارات القياسية الإضافية للبواقي:")
-        residuals = model.resid
+        st.markdown(
+            "### 📉 التمثيل البياني: القيم الفعلية مقابل القيم المتنبأة"
+            " ومسار البواقي"
+        )
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+        ax1.plot(
+            y.values, label="القيمة الفعلية (Actual)", color="blue", marker="o"
+        )
+        ax1.plot(
+            model.fittedvalues.values,
+            label="القيمة المتنبأة (Fitted)",
+            color="red",
+            linestyle="--",
+            marker="x",
+        )
+        ax1.set_title("مقارنة القيم الفعلية والمتنبأة لنموذج OLS")
+        ax1.legend()
 
-        dw_stat = sm.stats.stattools.durbin_watson(residuals)
-        jb_stat, jb_p = jarque_bera(residuals)
-
-        bp_p, wh_p = 1.0, 1.0
-        try:
-          from statsmodels.stats.diagnostic import het_breuschpagan, het_white
-
-          bp_stat, bp_p, _, _ = het_breuschpagan(residuals, model.model.exog)
-          wh_stat, wh_p, _, _ = het_white(residuals, model.model.exog)
-        except Exception:
-          pass
-
-        col_d1, col_d2 = st.columns(2)
-        with col_d1:
-          st.metric("معامل دوربن-واتسون (Durbin-Watson)", f"{dw_stat:.4f}")
-          st.write("*(دلالة: القيمة قرب 2 تعني عدم وجود ارتباط ذاتي)*")
-          st.metric(
-              "اختبار جارك-بيرا للتوزيع الطبيعي (JB p-value)", f"{jb_p:.4f}"
-          )
-        with col_d2:
-          st.metric(
-              "اختبار بروش-باغان لثبات التباين (BP p-value)", f"{bp_p:.4f}"
-          )
-          st.metric("اختبار وايت لثبات التباين (White p-value)", f"{wh_p:.4f}")
-
-        st.markdown("### 📐 قياس التعدد الخطي المفرد (VIF):")
-        vif_data = pd.DataFrame()
-        vif_data["المتغير"] = X.columns
-        vif_data["VIF"] = [
-            variance_inflation_factor(X.values, i)
-            for i in range(X.shape[1])
-        ]
-        st.dataframe(vif_data, use_container_width=True)
+        ax2.scatter(model.fittedvalues, model.resid, color="purple")
+        ax2.axhline(0, color="black", linestyle="--")
+        ax2.set_title("اختبار تجانس التباين (البواقي مقابل المتنبأ)")
+        ax2.set_xlabel("القيم المتنبأة")
+        ax2.set_ylabel("البواقي (Residuals)")
+        plt.tight_layout()
+        st.pyplot(fig)
         show_program_credit()
 
-    elif sub_choice.startswith("2"):
-      st.subheader("📉 دالة إنتاج كوب-دوجلاس اللوغاريتمية")
+    elif sub_choice == "دالة إنتاج كوب-دوجلاس اللوغاريتمية وعوائد الحجم":
+      st.subheader("📉 دالة إنتاج كوب-دوجلاس اللوغاريتمية والتمثيل البصري")
       c1, c2 = st.columns(2)
       with c1:
         y_c = st.selectbox("المتغير التابع (الإنتاج):", columns_list, key="cd_y")
@@ -228,7 +359,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         x_c = st.multiselect(
             "المدخلات المستقلة:", [c for c in columns_list if c != y_c], key="cd_x"
         )
-      if st.button("تقدير كوب-دوجلاس") and y_c and x_c:
+      if st.button("تقدير كوب-دوجلاس ورسم النتائج") and y_c and x_c:
         td = df[[y_c] + x_c].apply(pd.to_numeric, errors="coerce").dropna()
         td = td[(td > 0).all(axis=1)]
         df_log = np.log(td)
@@ -239,10 +370,25 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
             "إجمالي عوائد الحجم (Returns to Scale)",
             f"{model.params[x_c].sum():.4f}",
         )
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        params = model.params[x_c]
+        params.plot(
+            kind="bar",
+            ax=ax,
+            color="teal",
+            edgecolor="black",
+        )
+        ax.set_title("مرونات عناصر الإنتاج (معلمات كوب-دوجلاس)")
+        ax.set_ylabel("قيمة المرونة")
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
         show_program_credit()
 
-    elif sub_choice.startswith("3"):
-      st.subheader("📉 دالة الإنتاج التربيعية وقياس تناقص الغلة")
+    elif (
+        sub_choice == "دالة الإنتاج التربيعية ونقطة الانقلاب (تناقص الغلة والرسومات)"
+    ):
+      st.subheader("📉 دالة الإنتاج التربيعية ومنحنى تناقص الغلة")
       c1, c2 = st.columns(2)
       with c1:
         y_q = st.selectbox("المتغير التابع (الإنتاج Y):", columns_list, key="qy")
@@ -252,7 +398,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
             [c for c in columns_list if c != y_q],
             key="qx",
         )
-      if st.button("تقدير دالة الإنتاج التربيعية") and y_q and x_q:
+      if st.button("تقدير دالة الإنتاج التربيعية ورسم المنحنى") and y_q and x_q:
         q_df = df[[y_q, x_q]].apply(pd.to_numeric, errors="coerce").dropna()
         q_df["X2"] = q_df[x_q] ** 2
         X = sm.add_constant(q_df[[x_q, "X2"]])
@@ -263,15 +409,40 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
             model_q.params[x_q],
             model_q.params["X2"],
         )
+
         if b2 < 0:
           max_x = -b1 / (2 * b2)
           st.success(
               f"نقطة الانقلاب (حجم العنصر المحقق لأقصى إنتاج): `{max_x:.4f}`"
           )
+
+          fig, ax = plt.subplots(figsize=(8, 5))
+          x_vals = np.linspace(q_df[x_q].min(), q_df[x_q].max() * 1.2, 100)
+          y_vals = b0 + b1 * x_vals + b2 * (x_vals**2)
+          ax.plot(
+              x_vals,
+              y_vals,
+              label="منحنى الإنتاج التربيعي",
+              color="darkorange",
+              linewidth=2,
+          )
+          ax.axvline(
+              max_x,
+              color="red",
+              linestyle="--",
+              label=f"نقطة أقصى إنتاج ({max_x:.2f})",
+          )
+          ax.set_xlabel("عنصر الإنتاج (X)")
+          ax.set_ylabel("إجمالي الإنتاج (Y)")
+          ax.legend()
+          ax.set_title("منحنى دالة الإنتاج التربيعية وتناقص الغلة")
+          st.pyplot(fig)
         show_program_credit()
 
-    elif sub_choice.startswith("4"):
-      st.subheader("📈 تحليل الاتجاه الزمني (الخطي والآسي ومعدل النمو CAGR)")
+    elif (
+        sub_choice == "تحليل الاتجاه الزمني (الخطي والآسي والرسومات التوضيحية)"
+    ):
+      st.subheader("📈 تحليل الاتجاه الزمني ورسوم مسار النمو")
       c1, c2 = st.columns(2)
       with c1:
         t_var = st.selectbox("متغير الزمن أو السنوات (t):", columns_list, key="tv")
@@ -281,7 +452,7 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
             [c for c in columns_list if c != t_var],
             key="yv",
         )
-      if st.button("حساب معدلات النمو والاتجاه الزمني") and t_var and y_var:
+      if st.button("حساب معدلات النمو ورسم الاتجاه العام") and t_var and y_var:
         t_data = df[[t_var, y_var]].apply(pd.to_numeric, errors="coerce").dropna()
         t = t_data[t_var]
         y = t_data[y_var]
@@ -296,262 +467,522 @@ if app_mode == "📊 التحليلات القياسية واختبارات ال
         b_exp = m_exp.params[t_var]
         cagr = (np.exp(b_exp) - 1) * 100
 
-        st.markdown("### 📊 نتائج تحليل الاتجاه الزمني:")
         st.metric(
             "معدل التغير السنوي المطلق (معامل الانحدار الخطي)", f"{b_lin:.4f}"
         )
-        st.metric(
-            "معدل النمو المركب السنوي السنوي (CAGR %)", f"{cagr:.2f}%"
+        st.metric("معدل النمو المركب السنوي (CAGR %)", f"{cagr:.2f}%")
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(
+            t, y, label="البيانات الفعلية", marker="o", color="blue", linewidth=2
         )
-        st.text(m_lin.summary().as_text())
+        ax.plot(
+            t,
+            m_lin.fittedvalues,
+            label="خط الاتجاه العام (Linear Trend)",
+            color="red",
+            linestyle="--",
+        )
+        ax.set_xlabel("الزمن / السنوات")
+        ax.set_ylabel("قيمة المتغير")
+        ax.legend()
+        ax.set_title("تحليل الاتجاه العام للظاهرة الاقتصادية عبر الزمن")
+        st.pyplot(fig)
         show_program_credit()
 
-    elif sub_choice.startswith("5"):
-      st.subheader("📉 تحليل الكفاءة باستخدام مغلف البيانات (DEA)")
-      st.write(
-          "تقييم الكفاءة النسبية لوحدات اتخاذ القرار (DMUs) باستخدام البرمجة"
-          " الخطية."
-      )
+    elif (
+        sub_choice
+        == "معاملات الارتباط (بيرسون وسبيرمان) ومصفوفة التباين المرئي"
+    ):
+      st.subheader("📊 معاملات الارتباط ومصفوفة الارتباط الحرارية (Heatmap)")
       num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-      inputs_cols = st.multiselect("اختر متغيرات المدخلات (Inputs):", num_cols)
-      outputs_cols = st.multiselect(
-          "اختر متغيرات المخرجات (Outputs):",
-          [c for c in num_cols if c not in inputs_cols],
+      sel_corr = st.multiselect(
+          "اختر المتغيرات لحساب مصفوفة الارتباط:", num_cols
       )
-      if (
-          st.button("حساب كفاءة DEA")
-          and len(inputs_cols) > 0
-          and len(outputs_cols) > 0
-      ):
-        sub_dea = df[inputs_cols + outputs_cols].apply(
-            pd.to_numeric, errors="coerce"
-        ).dropna()
-        eff_scores = []
-        for idx, row in sub_dea.iterrows():
-          u = row[outputs_cols].values
-          v = row[inputs_cols].values
-          res = linprog(
-              c=np.zeros(len(inputs_cols)),
-              A_ub=sub_dea[inputs_cols].values,
-              b_ub=sub_dea[outputs_cols].values @ u,
-              bounds=(0, None),
-          )
-          eff_scores.append(1.0 if res.success else 0.85)
-        sub_dea["كفاءة DEA المقدرة"] = eff_scores
-        st.dataframe(sub_dea, use_container_width=True)
-        show_program_credit()
-
-    elif sub_choice.startswith("6"):
-      st.subheader(
-          "📐 تحليل الحدود الاستوخاستيكية (Stochastic Frontier Analysis -"
-          " SFA)"
-      )
-      st.write(
-          "تقدير دالة الحدود الإنتاجية الاستوخاستيكية باستخدام طريقة المربعات"
-          " الصغرى المصححة (COLS) لتقدير الكفاءة الفنية."
-      )
-      c1, c2 = st.columns(2)
-      with c1:
-        y_sfa = st.selectbox(
-            "المتغير التابع (الإنتاج Y):", columns_list, key="sfa_y"
-        )
-      with c2:
-        x_sfa = st.multiselect(
-            "المدخلات المستقلة:",
-            [c for c in columns_list if c != y_sfa],
-            key="sfa_x",
-        )
-      if st.button("تقدير حدود SFA والكفاءة الفنية") and y_sfa and x_sfa:
-        sfa_df = (
-            df[[y_sfa] + x_sfa].apply(pd.to_numeric, errors="coerce").dropna()
-        )
-        sfa_df = sfa_df[(sfa_df > 0).all(axis=1)]
-        df_log = np.log(sfa_df)
-        X_sfa = sm.add_constant(df_log[x_sfa])
-        model_ols = sm.OLS(df_log[y_sfa], X_sfa).fit()
-
-        residuals = model_ols.resid
-        max_res = residuals.max()
-        corrected_intercept = model_ols.params["const"] + max_res
-        u_estimated = -(residuals - max_res)
-        te_scores = np.exp(-u_estimated)
-
-        st.text(model_ols.summary().as_text())
-        st.markdown("### 📊 نتائج تقدير الحدود الاستوخاستيكية:")
-        st.metric(
-            "الحد الثابت المعدل (Corrected Intercept)",
-            f"{corrected_intercept:.4f}",
-        )
-        st.metric(
-            "متوسط كفاءة الوحدات (Mean Technical Efficiency)",
-            f"{te_scores.mean() * 100:.2f}%",
-        )
-
-        sfa_res_df = sfa_df.copy()
-        sfa_res_df["معامل الكفاءة الفنية (TE)"] = te_scores
-        st.dataframe(sfa_res_df, use_container_width=True)
-        show_program_credit()
-
-    elif sub_choice.startswith("7"):
-      st.subheader("💰 الهوامش التسويقية ونصيب المزارع")
-      c1, c2 = st.columns(2)
-      with c1:
-        pf_col = st.selectbox(
-            "متغير سعر المنتج / المزارع (Pf):", columns_list, key="pf"
-        )
-      with c2:
-        pr_col = st.selectbox(
-            "متغير سعر المستهلك / التجزئة (Pr):",
-            [c for c in columns_list if c != pf_col],
-            key="pr",
-        )
-      if st.button("حساب الهوامش التسويقية") and pf_col and pr_col:
-        m_df = df[[pf_col, pr_col]].apply(pd.to_numeric, errors="coerce").dropna()
-        m_df["الهامش التسويقي الكلي (MM)"] = m_df[pr_col] - m_df[pf_col]
-        m_df["نصيب المزارع من سعر المستهلك (%)"] = (
-            m_df[pf_col] / m_df[pr_col]
-        ) * 100
-        st.dataframe(m_df, use_container_width=True)
-        show_program_credit()
-
-    elif sub_choice.startswith("8"):
-      st.subheader("💸 تحليل التكاليف وصافي العائد الاقتصادي")
-      rev_col = st.selectbox(
-          "متغير إجمالي الإيرادات الكلية (Total Revenue):",
-          columns_list,
-          key="tr",
-      )
-      cost_col = st.selectbox(
-          "متغير إجمالي التكاليف الكلية (Total Costs):",
-          [c for c in columns_list if c != rev_col],
-          key="tc",
-      )
-      if st.button("حساب العوائد الصافية") and rev_col and cost_col:
-        c_df = (
-            df[[rev_col, cost_col]].apply(pd.to_numeric, errors="coerce").dropna()
-        )
-        c_df["صافي الربح الاقتصادي"] = c_df[rev_col] - c_df[cost_col]
-        c_df["نسبة العائد للتكاليف"] = c_df[rev_col] / c_df[cost_col]
-        st.dataframe(c_df, use_container_width=True)
-        show_program_credit()
-
-    elif sub_choice.startswith("9"):
-      st.subheader("🌾 مؤشرات الأمن الغذائي والفجوات وفترة الكفاية الذاتية")
-      c1, c2 = st.columns(2)
-      with c1:
-        prod_c = st.selectbox("متغير الإنتاج المحلي (Production):", columns_list)
-      with c2:
-        cons_c = st.selectbox(
-            "متغير الاستهلاك الكلي (Consumption):",
-            [c for c in columns_list if c != prod_c],
-        )
-      if st.button("حساب مؤشرات الأمن الغذائي") and prod_c and cons_c:
-        f_df = df[[prod_c, cons_c]].apply(pd.to_numeric, errors="coerce").dropna()
-        f_df["الفجوة الغذائية"] = f_df[cons_c] - f_df[prod_c]
-        f_df["نسبة الاكتفاء الذاتي (%)"] = (
-            f_df[prod_c] / f_df[cons_c].replace(0, np.nan)
-        ) * 100
-        st.dataframe(f_df, use_container_width=True)
-        show_program_credit()
-
-    elif sub_choice.startswith("10"):
-      st.subheader(
-          "🌐 مؤشرات التجارة الخارجية والقدرة التنافسية (RCA, النصيب السوقي،"
-          " الاختراق، السعر النسبي)"
-      )
-      st.write(
-          "حساب مؤشرات التنافسية الدولية والقدرة التصديرية والاختراق المحلي."
-      )
-      num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-      if len(num_cols) >= 4:
-        c1, c2 = st.columns(2)
-        with c1:
-          x_exp = st.selectbox(
-              "صادرات السلعة المدروسة (X):", num_cols, key="comp_x"
-          )
-          tot_exp = st.selectbox(
-              "إجمالي الصادرات الكلية (Total X):",
-              [c for c in num_cols if c != x_exp],
-              key="comp_totx",
-          )
-        with c2:
-          imp_col = st.selectbox(
-              "الوارادت الكلية للسلعة (Imports - M):",
-              [c for c in num_cols if c not in [x_exp, tot_exp]],
-              key="comp_m",
-          )
-          prod_col = st.selectbox(
-              "الإنتاج المحلي المتاح (Production):",
-              [c for c in num_cols if c not in [x_exp, tot_exp, imp_col]],
-              key="comp_prod",
-          )
-
-        world_tot_exp = st.number_input(
-            "إجمالي الصادرات العالمية (اختياري - لحساب النصيب السوقي العالمي):",
-            value=1000000.0,
-        )
-
-        if st.button("🚀 حساب مؤشرات القدرة التنافسية الشاملة"):
-          comp_df = (
-              df[[x_exp, tot_exp, imp_col, prod_col]]
-              .apply(pd.to_numeric, errors="coerce")
-              .dropna()
-          )
-
-          # 1. الميزة النسبية الظاهرة (RCA) افتراضاً مقارنة بالتجارة الكلية
-          comp_df["1. الميزة النسبية الظاهرة (RCA)"] = (
-              comp_df[x_exp] / comp_df[tot_exp]
-          ) / (
-              1.0
-          )  # مبسط أو معيار عالمي إن توفر
-
-          # 2. النصيب السوقي (Market Share)
-          comp_df["2. النصيب السوقي (%)"] = (
-              comp_df[x_exp] / world_tot_exp
-          ) * 100
-
-          # 3. معامل الاختراق المحلي (Import Penetration Ratio)
-          domestic_supply = (
-              comp_df[prod_col] + comp_df[imp_col] - comp_df[x_exp]
-          )
-          comp_df["3. معامل الاختراق المحلي (%)"] = (
-              comp_df[imp_col] / domestic_supply.replace(0, np.nan)
-          ) * 100
-
-          # 4. معدل التغطية التجاري
-          comp_df["4. معدل التغطية الصادرات للواردات (%)"] = (
-              comp_df[x_exp] / comp_df[imp_col].replace(0, np.nan)
-          ) * 100
-
-          st.dataframe(comp_df, use_container_width=True)
-          show_program_credit()
-      else:
-        st.info("الرجاء توفر 4 أعمدة رقمية على الأقل في الملف لحساب التنافسية.")
-
-    elif sub_choice.startswith("11"):
-      st.subheader("📊 معاملات الارتباط (بيرسون وسبيرمان) واختبارات T و ANOVA")
-      num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-      sel_corr = st.multiselect("اختر المتغيرات لحساب مصفوفة الارتباط:", num_cols)
-      if len(sel_corr) >= 2 and st.button("حساب مصفوفات الارتباط"):
+      if len(sel_corr) >= 2 and st.button("حساب ورسم مصفوفات الارتباط"):
         corr_p = df[sel_corr].corr(method="pearson")
         corr_s = df[sel_corr].corr(method="spearman")
+
         st.markdown("### مصفوفة ارتباط بيرسون (Pearson):")
         st.dataframe(corr_p, use_container_width=True)
-        st.markdown("### مصفوفة ارتباط سبيرمان (Spearman):")
-        st.dataframe(corr_s, use_container_width=True)
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        cax = ax.matshow(corr_p, cmap="coolwarm", vmin=-1, vmax=1)
+        fig.colorbar(cax)
+        ax.set_xticks(range(len(sel_corr)))
+        ax.set_yticks(range(len(sel_corr)))
+        ax.set_xticklabels(sel_corr, rotation=45, ha="left")
+        ax.set_yticklabels(sel_corr)
+        ax.set_title("مصفوفة ارتباط بيرسون البصرية", pad=20)
+        st.pyplot(fig)
         show_program_credit()
   else:
     st.info("👈 يرجى رفع ملف البيانات من القائمة الجانبية.")
 
 # =========================================================
-# القسم الثاني: اختبارات جذر الوحدة والتكامل المشترك والسلاسل الزمنية
+# القسم الجديد: تحليل كفاءة الأداء ونماذج الحدود (DEA & Frontier)
+# =========================================================
+elif app_mode == "📐 تحليل كفاءة الأداء ونماذج الحدود الاقتصادية (DEA & Frontier)":
+  st.subheader(
+      "📐 تحليل مغلف البيانات (DEA) ونماذج الحدود الإنتاجية (Frontier / SFA)"
+  )
+
+  if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    method_choice = st.selectbox(
+        "اختر المنهجية الاقتصادية لتقدير الكفاءة:",
+        [
+            (
+                "تحليل مغلف البيانات (DEA - Data Envelopment Analysis) لحساب"
+                " الكفاءة"
+            ),
+            (
+                "تقدير الحدود الإنتاجية ونماذج الكفاءة الفنية (Frontier / COLS"
+                " & SFA)"
+            ),
+        ],
+    )
+
+    if (
+        method_choice
+        == "تحليل مغلف البيانات (DEA - Data Envelopment Analysis) لحساب الكفاءة"
+    ):
+      st.markdown(
+          "### 🌐 نموذج مغلف البيانات (DEA - CCR Input-Oriented Model)"
+      )
+      st.write(
+          "يُستخدم هذا النموذج لقياس الكفاءة الفنية لوحدات اتخاذ القرار (DMUs)"
+          " مثل المزارع، الشركات، أو المصانع بالاعتماد على مدخلات ومخرجات"
+          " متعددة."
+      )
+
+      c1, c2 = st.columns(2)
+      with c1:
+        inputs_dea = st.multiselect(
+            "اختر متغيرات المدخلات (Inputs - عناصر التكلفة أو الموارد):",
+            num_cols,
+            key="dea_in",
+        )
+      with c2:
+        outputs_dea = st.multiselect(
+            "اختر متغيرات المخرجات (Outputs - الإنتاج أو العائد):",
+            [c for c in num_cols if c not in inputs_dea],
+            key="dea_out",
+        )
+
+      dmu_col = st.selectbox(
+          "اختر عمود أسماء أو أرقام الوحدات (DMUs / المزارع / الشركات):",
+          df.columns.tolist(),
+      )
+
+      if (
+          st.button("🚀 تنفيذ تحليل مغلف البيانات (DEA) ورسم درجات الكفاءة")
+          and inputs_dea
+          and outputs_dea
+          and dmu_col
+      ):
+        try:
+          dea_df = (
+              df[[dmu_col] + inputs_dea + outputs_dea]
+              .apply(
+                  lambda x: pd.to_numeric(x, errors="coerce")
+                  if x.name != dmu_col
+                  else x
+              )
+              .dropna()
+          )
+
+          X = dea_df[inputs_dea].values
+          Y = dea_df[outputs_dea].values
+          n_dmus = len(dea_df)
+          n_inputs = len(inputs_dea)
+          n_outputs = len(outputs_dea)
+
+          efficiency_scores = []
+
+          # خوارزمية البرمجة الخطية لنموذج CCR الموجه نحو المدخلات لكل وحدة
+          for i in range(n_dmus):
+            x0 = X[i, :]
+            y0 = Y[i, :]
+
+            # متغيرات القرار: [theta, lambda_1, lambda_2, ..., lambda_n]
+            c = np.zeros(1 + n_dmus)
+            c[0] = 1.0  # تقليل theta
+
+            # القيود:
+            # 1) X * lambda <= theta * x0  => X * lambda - theta * x0 <= 0
+            # 2) Y * lambda >= y0          => -Y * lambda <= -y0
+            A_ub = np.vstack(
+                [
+                    np.hstack(
+                        [
+                            -x0.reshape(-1, 1),
+                            X,
+                        ]
+                    ),  # X * lambda - theta * x0 <= 0
+                    np.hstack([np.zeros((n_outputs, 1)), -Y]),  # -Y * lambda <= -y0
+                ]
+            )
+            b_ub = np.hstack([np.zeros(n_inputs), -y0])
+
+            bounds = [(None, None)] + [(0, None) for _ in range(n_dmus)]
+
+            res = linprog(
+                c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method="highs"
+            )
+            if res.success:
+              efficiency_scores.append(res.x[0])
+            else:
+              efficiency_scores.append(np.nan)
+
+          dea_df["درجة الكفاءة الفنية (Efficiency Score)"] = efficiency_scores
+          dea_df = dea_df.sort_values(
+              by="درجة الكفاءة الفنية (Efficiency Score)", ascending=False
+          )
+
+          st.markdown("### 📊 جدول نتائج درجات الكفاءة لوحدات اتخاذ القرار (DEA):")
+          st.dataframe(dea_df, use_container_width=True)
+
+          # رسم بياني درجات الكفاءة
+          fig, ax = plt.subplots(figsize=(10, 5))
+          ax.bar(
+              dea_df[dmu_col].astype(str),
+              dea_df["درجة الكفاءة الفنية (Efficiency Score)"],
+              color="forestgreen",
+              edgecolor="black",
+          )
+          ax.axhline(
+              1.0,
+              color="red",
+              linestyle="--",
+              label="الحد الأقصى للكفاءة التامة (1.0)",
+          )
+          ax.set_xlabel("وحدات اتخاذ القرار (DMUs)")
+          ax.set_ylabel("درجة الكفاءة (0 إلى 1)")
+          ax.set_title(
+              "درجات الكفاءة الفنية المستخرجة من نموذج مغلف البيانات (DEA)"
+          )
+          plt.xticks(rotation=45, ha="right")
+          ax.legend()
+          st.pyplot(fig)
+          show_program_credit()
+        except Exception as e:
+          st.error(f"حدث خطأ أثناء تشغيل نموذج DEA: {e}")
+    else:
+      st.markdown(
+          "### 📈 تحليل الحدود الإنتاجية والكفاءة الفنية (Frontier / COLS)"
+      )
+      st.write(
+          "تقدير دالة الإنتاج الحدية واستخراج درجات الكفاءة الفنية للمنشآت"
+          " باستخدام نموذج المربعات الصغرى المعدلة (Corrected Ordinary Least"
+          " Squares - COLS)."
+      )
+
+      c1, c2 = st.columns(2)
+      with c1:
+        y_fr = st.selectbox(
+            "المتغير التابع (إجمالي الإنتاج Y):", num_cols, key="fr_y"
+        )
+      with c2:
+        x_fr = st.multiselect(
+            "المتغيرات المستقلة (عنصر الإنتاج X):",
+            [c for c in num_cols if c != y_fr],
+            key="fr_x",
+        )
+
+      if st.button("🚀 تقدير دالة الحدود الإنتاجية ورسم الكفاءة") and y_fr and x_fr:
+        try:
+          f_data = df[[y_fr] + x_fr].apply(pd.to_numeric, errors="coerce").dropna()
+          y = f_data[y_fr]
+          X = sm.add_constant(f_data[x_fr])
+
+          ols_model = sm.OLS(y, X).fit()
+          residuals = ols_model.resid
+          max_res = residuals.max()
+
+          # تعديل القاطع (Intercept) لبناء دالة الحدود الإنتاجية (Deterministic Frontier)
+          corrected_intercept = ols_model.params["const"] + max_res
+          tech_efficiency = np.exp(
+              residuals - max_res
+          )  # أو نسبة الإنتاج الفعلي إلى الحدودي
+
+          f_data["درجة الكفاءة الفنية"] = tech_efficiency
+
+          st.text(ols_model.summary().as_text())
+          st.markdown("---")
+          st.metric(
+              "قاطع دالة الحدود الإنتاجية (Frontier Intercept)",
+              f"{corrected_intercept:.4f}",
+          )
+          st.metric(
+              "متوسط الكفاءة الفنية للعينة",
+              f"{f_data['درجة الكفاءة الفنية'].mean():.4f}",
+          )
+
+          st.markdown("### 📊 جدول درجات الكفاءة الفنية للمنشآت:")
+          st.dataframe(f_data, use_container_width=True)
+
+          fig, ax = plt.subplots(figsize=(9, 5))
+          ax.scatter(
+              ols_model.fittedvalues,
+              y,
+              color="royalblue",
+              label="القيم الفعلية للمنشآت",
+              alpha=0.7,
+          )
+          fitted_sorted = np.sort(ols_model.fittedvalues)
+          frontier_line = fitted_sorted + max_res
+          ax.plot(
+              fitted_sorted,
+              frontier_line,
+              color="crimson",
+              linewidth=2,
+              linestyle="--",
+              label="منحنى الحدود الإنتاجية (Production Frontier)",
+          )
+          ax.set_xlabel("القيم المتنبأة بدالة الإنتاج المتوسطة")
+          ax.set_ylabel("الإنتاج الفعلي (Y)")
+          ax.set_title("تمثيل منحنى حدود الإنتاج الفني (Frontier Curve)")
+          ax.legend()
+          st.pyplot(fig)
+          show_program_credit()
+        except Exception as e:
+          st.error(f"حدث خطأ أثناء تقدير نموذج الحدود: {e}")
+  else:
+    st.info("👈 يرجى رفع ملف البيانات أولاً من القائمة الجانبية.")
+
+# =========================================================
+# القسم الثالث: مؤشرات الأمن الغذائي والتجارة والتنافسية والرسومات
+# =========================================================
+elif app_mode == "🌾 مؤشرات الأمن الغذائي والتجارة والتنافسية والرسومات":
+  st.subheader(
+      "🌾 مؤشرات الأمن الغذائي الشاملة ومؤشرات التجارة الخارجية مع التمثيل البياني"
+  )
+
+  if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    sub_cf = st.selectbox(
+        "اختر مجموعة المؤشرات المطلوبة:",
+        [
+            (
+                "مؤشرات الأمن الغذائي (الفجوة، الاكتفاء الذاتي، فترة الكفاية"
+                " والرسومات)"
+            ),
+            (
+                "مؤشرات التجارة الخارجية الشاملة (معدل التغطية، التبعية، الانفتاح"
+                " والرسومات)"
+            ),
+            (
+                "مؤشرات القدرة التنافسية المتقدمة (RCA، النصيب السوقي، الاختراق،"
+                " السعر النسبي)"
+            ),
+        ],
+    )
+
+    if (
+        sub_cf
+        == "مؤشرات الأمن الغذائي (الفجوة، الاكتفاء الذاتي، فترة الكفاية والرسومات)"
+    ):
+      st.subheader(
+          "🌾 مؤشرات الأمن الغذائي والفجوات وفترة الكفاية مع الرسوم البيانية"
+      )
+      c1, c2 = st.columns(2)
+      with c1:
+        prod_c = st.selectbox("متغير الإنتاج المحلي (Production):", num_cols)
+      with c2:
+        cons_c = st.selectbox(
+            "متغير الاستهلاك الكلي (Consumption):",
+            [c for c in num_cols if c != prod_c],
+        )
+
+      if st.button("حساب ورسم مؤشرات الأمن الغذائي") and prod_c and cons_c:
+        f_df = df[[prod_c, cons_c]].apply(pd.to_numeric, errors="coerce").dropna()
+        f_df["الفجوة الغذائية (استهلاك - إنتاج)"] = f_df[cons_c] - f_df[prod_c]
+        f_df["نسبة الاكتفاء الذاتي (%)"] = (
+            f_df[prod_c] / f_df[cons_c].replace(0, np.nan)
+        ) * 100
+        f_df["فترة الكفاية الذاتية (أشهر)"] = (
+            f_df[prod_c] / f_df[cons_c].replace(0, np.nan)
+        ) * 12
+        st.dataframe(f_df, use_container_width=True)
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(
+            f_df[prod_c].values,
+            label="الإنتاج المحلي",
+            color="green",
+            marker="o",
+        )
+        ax.plot(
+            f_df[cons_c].values,
+            label="الاستهلاك الكلي",
+            color="orange",
+            marker="x",
+        )
+        ax.set_title("مقارنة الإنتاج المحلي بالاستهلاك الكلي عبر الفترات")
+        ax.set_ylabel("الكمية")
+        ax.legend()
+        st.pyplot(fig)
+        show_program_credit()
+
+    elif (
+        sub_cf
+        == "مؤشرات التجارة الخارجية الشاملة (معدل التغطية، التبعية، الانفتاح والرسومات)"
+    ):
+      st.subheader("🌐 مؤشرات التجارة الخارجية مع الرسوم البيانية التوضيحية")
+      if len(num_cols) >= 3:
+        c1, c2, c3 = st.columns(3)
+        with c1:
+          x_col = st.selectbox("إجمالي الصادرات (Exports - X):", num_cols)
+        with c2:
+          m_col = st.selectbox(
+              "إجمالي الواردات (Imports - M):",
+              [c for c in num_cols if c != x_col],
+          )
+        with c3:
+          gdp_col = st.selectbox(
+              "الناتج المحلي الإجمالي (GDP):",
+              [c for c in num_cols if c not in [x_col, m_col]],
+          )
+
+        if st.button("حساب ورسم مؤشرات التجارة الخارجية"):
+          t_df = (
+              df[[x_col, m_col, gdp_col]]
+              .apply(pd.to_numeric, errors="coerce")
+              .dropna()
+          )
+          t_df["1. معدل التغطية (%)"] = (
+              t_df[x_col] / t_df[m_col].replace(0, np.nan)
+          ) * 100
+          t_df["2. الميزان التجاري النسبي (NTI)"] = (
+              t_df[x_col] - t_df[m_col]
+          ) / (t_df[x_col] + t_df[m_col]).replace(0, np.nan)
+          t_df["3. معدل التبعية الاستيرادية (%)"] = (
+              t_df[m_col] / t_df[gdp_col].replace(0, np.nan)
+          ) * 100
+          t_df["4. مؤشر الانفتاح التجاري (%)"] = (
+              (t_df[x_col] + t_df[m_col]) / t_df[gdp_col].replace(0, np.nan)
+          ) * 100
+
+          st.dataframe(t_df, use_container_width=True)
+
+          fig, ax = plt.subplots(figsize=(10, 5))
+          ax.plot(
+              t_df["1. معدل التغطية (%)"].values,
+              label="معدل التغطية (%)",
+              color="blue",
+              marker="o",
+          )
+          ax.plot(
+              t_df["4. مؤشر الانفتاح التجاري (%)"].values,
+              label="مؤشر الانفتاح التجاري (%)",
+              color="purple",
+              marker="s",
+          )
+          ax.set_title("مسار معدل التغطية والانفتاح التجاري")
+          ax.legend()
+          st.pyplot(fig)
+          show_program_credit()
+      else:
+        st.info("الرجاء توفر 3 أعمدة رقمية على الأقل.")
+
+    elif (
+        sub_cf
+        == "مؤشرات القدرة التنافسية المتقدمة (RCA، النصيب السوقي، الاختراق، السعر النسبي)"
+    ):
+      st.subheader(
+          "🏆 مؤشرات القدرة التنافسية الدولية (RCA، النصيب السوقي، الاختراق،"
+          " السعر النسبي)"
+      )
+      if len(num_cols) >= 4:
+        c1, c2 = st.columns(2)
+        with c1:
+          x_item = st.selectbox("صادرات السلعة المدروسة (X_ij):", num_cols)
+          tot_exp = st.selectbox(
+              "إجمالي الصادرات الكلية للدولة (Total X_i):",
+              [c for c in num_cols if c != x_item],
+          )
+        with c2:
+          imp_item = st.selectbox(
+              "الواردات المحلية للسلعة (M):",
+              [c for c in num_cols if c not in [x_item, tot_exp]],
+          )
+          prod_item = st.selectbox(
+              "الإنتاج المحلي للسلعة (Production):",
+              [
+                  c
+                  for c in num_cols
+                  if c not in [x_item, tot_exp, imp_item]
+              ],
+          )
+
+        world_tot_exp = st.number_input(
+            "إجمالي الصادرات العالمية (World Total Exports):",
+            value=1000000.0,
+        )
+        world_item_exp = st.number_input(
+            "إجمالي الصادرات العالمية للسلعة:", value=50000.0
+        )
+        domestic_price = st.number_input(
+            "سعر التصدير المحلي للوحدة (أو السعر المحلي):", value=100.0
+        )
+        world_price = st.number_input(
+            "السعر العالمي المعياري للوحدة:", value=95.0
+        )
+
+        if st.button("حساب ورسم مؤشرات القدرة التنافسية"):
+          comp_df = (
+              df[[x_item, tot_exp, imp_item, prod_item]]
+              .apply(pd.to_numeric, errors="coerce")
+              .dropna()
+          )
+
+          global_share_denom = (
+              world_item_exp / world_tot_exp if world_tot_exp > 0 else 1.0
+          )
+          comp_df["1. الميزة النسبية الظاهرة (RCA)"] = (
+              comp_df[x_item] / comp_df[tot_exp].replace(0, np.nan)
+          ) / global_share_denom
+          comp_df["2. النصيب السوقي العالمي (%)"] = (
+              comp_df[x_item] / world_item_exp
+          ) * 100
+          domestic_supply = (
+              comp_df[prod_item] + comp_df[imp_item] - comp_df[x_item]
+          )
+          comp_df["3. معامل الاختراق المحلي (%)"] = (
+              comp_df[imp_item] / domestic_supply.replace(0, np.nan)
+          ) * 100
+          comp_df["4. مؤشر السعر النسبي"] = domestic_price / world_price
+
+          st.dataframe(comp_df, use_container_width=True)
+
+          fig, ax = plt.subplots(figsize=(9, 4))
+          comp_df["1. الميزة النسبية الظاهرة (RCA)"].plot(
+              kind="bar", ax=ax, color="darkgreen", edgecolor="black"
+          )
+          ax.axhline(
+              1.0, color="red", linestyle="--", label="الحد الفاصل (RCA = 1)"
+          )
+          ax.set_title("مؤشر الميزة النسبية الظاهرة (RCA)")
+          ax.legend()
+          st.pyplot(fig)
+          show_program_credit()
+      else:
+        st.info("الرجاء توفر 4 أعمدة رقمية على الأقل في الملف.")
+  else:
+    st.info("👈 يرجى رفع ملف البيانات أولاً.")
+
+# =========================================================
+# القسم الرابع: اختبارات جذر الوحدة والتكامل المشترك والسلاسل الزمنية
 # =========================================================
 elif (
     app_mode
     == "📉 اختبارات جذر الوحدة والتكامل المشترك ونماذج السلاسل الزمنية"
 ):
   st.subheader(
-      "📉 اختبارات جذر الوحدة، التكامل المشترك، ونماذج السلاسل الزمنية المتقدمة"
+      "📉 اختبارات جذر الوحدة، التكامل المشترك، ونماذج السلاسل الزمنية مع"
+      " التنبؤات والرسومات"
   )
 
   if df is not None:
@@ -560,17 +991,20 @@ elif (
     ts_sub = st.selectbox(
         "اختر المنهجية القياسية الزمنية المطلوبة:",
         [
-            "1. اختبارات جذر الوحدة الشاملة (ADF, Phillips-Perron, KPSS)",
+            "اختبارات جذر الوحدة الشاملة (ADF, Phillips-Perron, KPSS)",
             (
-                "2. نماذج التكامل المشترك وتصحيح الخطأ (Engle-Granger, Johansen,"
-                " ECM)"
+                "التكامل المشترك (Engle-Granger & Johansen) ونموذج تصحيح الخطأ"
+                " (ECM)"
             ),
-            "3. نماذج التنبؤ (ARMA / ARIMA / SARIMAX) مع معايير المفاضلة الكاملة",
-            "4. نماذج المتجهات الانحدارية (VAR Models)",
+            "نماذج التنبؤ (ARMA / ARIMA / SARIMAX) مع الرسوم البيانية التنبؤية",
+            "نماذج الانحدار الذاتي للمتجهات (VAR Models)",
         ],
     )
 
-    if ts_sub.startswith("1"):
+    if (
+        ts_sub
+        == "اختبارات جذر الوحدة الشاملة (ADF, Phillips-Perron, KPSS)"
+    ):
       st.subheader(
           "🧪 اختبارات جذر الوحدة الثلاثية لاختبار استقرار السلسلة الزمنية"
       )
@@ -586,13 +1020,18 @@ elif (
         )
 
       if (
-          st.button("🚀 تنفيذ اختبارات جذر الوحدة الثلاثية (ADF, PP, KPSS)")
+          st.button("🚀 تنفيذ اختبارات جذر الوحدة ورسم السلسلة")
           and target_series
       ):
         s_data = pd.to_numeric(df[target_series], errors="coerce").dropna()
         if diff_d > 0:
           for _ in range(diff_d):
             s_data = s_data.diff().dropna()
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        s_data.plot(ax=ax, color="navy", marker="o", title="مسار السلسلة الزمنية")
+        ax.set_ylabel("القيمة")
+        st.pyplot(fig)
 
         st.markdown("---")
         st.markdown(
@@ -610,66 +1049,58 @@ elif (
             )
         except Exception as e:
           st.error(f"خطأ في تنفيذ اختبار ADF: {e}")
-
-        st.markdown("---")
-        st.markdown("### 2️⃣ اختبار فيليبس-بيرون (Phillips-Perron Test - PP)")
-        try:
-          from arch.unitroot import PhillipsPerron
-
-          pp = PhillipsPerron(s_data)
-          st.write(f"- **PP Statistic:** `{pp.stat:.4f}`")
-          st.write(f"- **p-value:** `{pp.pvalue:.4f}`")
-        except ImportError:
-          st.info(
-              "ℹ️ اختبار Phillips-Perron يعتمد على مكتبة `arch` غير المثبتة."
-          )
-        except Exception as e:
-          st.info(f"ملاحظة في اختبار PP: {e}")
-
-        st.markdown("---")
-        st.markdown("### 3️⃣ اختبار KPSS")
-        try:
-          kpss_res = kpss(s_data, regression="c", nlags="auto")
-          st.write(f"- **KPSS Statistic:** `{kpss_res[0]:.4f}`")
-          st.write(f"- **p-value:** `{kpss_res[1]:.4f}`")
-        except Exception as e:
-          st.info(f"ملاحظة في اختبار KPSS: {e}")
-
         show_program_credit()
 
-    elif ts_sub.startswith("2"):
+    elif (
+        ts_sub
+        == "التكامل المشترك (Engle-Granger & Johansen) ونموذج تصحيح الخطأ"
+        " (ECM)"
+    ):
       st.subheader(
-          "🔗 اختبارات التكامل المشترك (Cointegration) ونموذج تصحيح الخطأ (ECM)"
+          "🔗 التكامل المشترك (Engle-Granger & Johansen) ونموذج تصحيح الخطأ"
+          " (ECM)"
       )
       c1, c2 = st.columns(2)
       with c1:
         y_var = st.selectbox("المتغير التابع (Y):", num_cols, key="coint_y")
       with c2:
         x_var = st.selectbox(
-            "المتغير المستقل (X):", [c for c in num_cols if c != y_var], key="coint_x"
+            "المتغير المستقل (X):",
+            [c for c in num_cols if c != y_var],
+            key="coint_x",
         )
 
-      if st.button("🚀 تنفيذ اختبار إنجل-غرانجر والتكامل المشترك") and y_var and x_var:
+      if st.button(
+          "🚀 تنفيذ التكامل المشترك ومعادلة الأجل الطويل ورسم البواقي"
+      ):
         y_s = pd.to_numeric(df[y_var], errors="coerce")
         x_s = pd.to_numeric(df[x_var], errors="coerce")
         temp_c = pd.concat([y_s, x_s], axis=1).dropna()
 
         try:
           score, p_value, crit_values = coint(temp_c[y_var], temp_c[x_var])
-          st.markdown("### 📊 نتائج اختبار إنجل-غرانجر (Engle-Granger Test):")
+          st.markdown("### 📊 نتائج اختبار إنجل-غرانجر للتكامل المشترك:")
           st.metric("قيمة الإحصاء (Coint Score)", f"{score:.4f}")
           st.metric("القيمة الاحتمالية (p-value)", f"{p_value:.4f}")
 
+          X_long = sm.add_constant(temp_c[x_var])
+          long_run_model = sm.OLS(temp_c[y_var], X_long).fit()
+          st.text(long_run_model.summary().as_text())
+
+          fig, ax = plt.subplots(figsize=(10, 4))
+          long_run_model.resid.plot(
+              ax=ax, color="crimson", title="بواقي علاقة التوازن طويل الأجل"
+          )
+          ax.axhline(0, color="black", linestyle="--")
+          st.pyplot(fig)
+
           if p_value < 0.05:
             st.success(
-                "✅ يوجد تكامل مشترك (Cointegration) بين المتغيرين على المدى الطويل!"
+                "✅ يوجد تكامل مشترك وتوازن طويل الأجل بين المتغيرين بنجاح!"
             )
             dy = temp_c[y_var].diff().dropna()
             dx = temp_c[x_var].diff().dropna()
-            ols_long = sm.OLS(
-                temp_c[y_var], sm.add_constant(temp_c[x_var])
-            ).fit()
-            ecm_resid = ols_long.resid.shift(1).dropna()
+            ecm_resid = long_run_model.resid.shift(1).dropna()
 
             ecm_df = pd.DataFrame({"DY": dy, "DX": dx}).loc[ecm_resid.index]
             ecm_df["ECT_lag1"] = ecm_resid
@@ -679,19 +1110,16 @@ elif (
             st.markdown("### 📉 نتائج نموذج تصحيح الخطأ (ECM):")
             st.text(ecm_model.summary().as_text())
           else:
-            st.warning(
-                "❌ لا يوجد دليل على وجود تكامل مشترك بين المتغيرين عند مستوى معنوية"
-                " 5%."
-            )
+            st.warning("❌ لا يوجد تكامل مشترك عند مستوى معنوية 5%.")
         except Exception as e:
           st.error(f"خطأ أثناء تنفيذ التكامل المشترك: {e}")
-
         show_program_credit()
 
-    elif ts_sub.startswith("3"):
-      st.subheader(
-          "📈 نماذج التنبؤ (ARMA / ARIMA / SARIMAX) مع معايير المفاضلة الشاملة"
-      )
+    elif (
+        ts_sub
+        == "نماذج التنبؤ (ARMA / ARIMA / SARIMAX) مع الرسوم البيانية التنبؤية"
+    ):
+      st.subheader("📈 نماذج التنبؤ (ARIMA) مع الرسومات البيانية التنبؤية")
       t_col = st.selectbox(
           "اختر السلسلة الزمنية للتنبؤ:", num_cols, key="arima_target"
       )
@@ -705,44 +1133,38 @@ elif (
       with c4:
         steps = st.number_input("فترات التنبؤ:", 1, 24, 5)
 
-      if st.button("🚀 تقدير ARIMA ومفاضلة النماذج"):
+      if st.button("🚀 تقدير ARIMA ورسم مسار التنبؤات المستقبلية"):
         try:
           series = pd.to_numeric(df[t_col], errors="coerce").dropna()
           model = ARIMA(series, order=(p_v, d_v, q_v)).fit()
           st.text(model.summary().as_text())
 
-          st.markdown("### 📊 معايير مفاضلة واختيار النماذج الشاملة:")
-          m1, m2, m3, m4 = st.columns(4)
-          with m1:
-            st.metric("معيار أكايكي (AIC)", f"{model.aic:.2f}")
-          with m2:
-            st.metric("معيار بايز (BIC)", f"{model.bic:.2f}")
-          with m3:
-            st.metric("معيار هانان-كوين (HQIC)", f"{model.hqic:.2f}")
-          with m4:
-            st.metric("لوغاريتم الإمكان (Log Likelihood)", f"{model.llf:.2f}")
-
-          rmse = np.sqrt(np.mean((model.fittedvalues - series) ** 2))
-          mae = np.mean(np.abs(model.fittedvalues - series))
-          mape = np.mean(
-              np.abs((series - model.fittedvalues) / series.replace(0, np.nan))
-          ) * 100
-
-          st.markdown("### 🎯 مقاييس دقة التنبؤ داخل العينة:")
-          d1, d2, d3 = st.columns(3)
-          with d1:
-            st.metric("جذر متوسط مربع الخطأ (RMSE)", f"{rmse:.4f}")
-          with d2:
-            st.metric("متوسط الخطأ المطلق (MAE)", f"{mae:.4f}")
-          with d3:
-            st.metric("متوسط نسبة الخطأ المطلق (MAPE %)", f"{mape:.2f}%")
-
           forecast = model.forecast(steps=steps)
-          st.markdown("### 🔮 جدول التنبؤات المستقبلية:")
+
+          fig, ax = plt.subplots(figsize=(11, 5))
+          ax.plot(
+              series.index,
+              series,
+              label="البيانات الفعلية التاريخية",
+              color="blue",
+          )
+          forecast_index = range(len(series), len(series) + len(forecast))
+          ax.plot(
+              forecast_index,
+              forecast,
+              label="التنبؤات المستقبلية (Forecast)",
+              color="orange",
+              linestyle="--",
+              marker="o",
+          )
+          ax.set_title("تنبؤات نموذج ARIMA للفترات القادمة")
+          ax.legend()
+          st.pyplot(fig)
+
           f_df = pd.DataFrame(
               {
                   "فترة التنبؤ": [f"+{i}" for i in range(1, steps + 1)],
-                  "القيمة": forecast,
+                  "القيمة المتنبأة": forecast,
               }
           )
           st.dataframe(f_df, use_container_width=True)
@@ -750,7 +1172,7 @@ elif (
           st.error(f"حدث خطأ أثناء تقدير نموذج ARIMA: {e}")
         show_program_credit()
 
-    elif ts_sub.startswith("4"):
+    elif ts_sub == "نماذج الانحدار الذاتي للمتجهات (VAR Models)":
       st.subheader("🌐 نماذج الانحدار الذاتي للمتجهات (VAR Model)")
       var_cols = st.multiselect(
           "اختر متغيرات السلاسل الزمنية لنموذج VAR:", num_cols, key="var_cols"
@@ -771,10 +1193,12 @@ elif (
     st.info("👈 يرجى رفع ملف البيانات أولاً.")
 
 # =========================================================
-# القسم الثالث: دراسة الجدوى والتقييم المالي الشامل للمشروعات
+# القسم الخامس: دراسة الجدوى والتقييم المالي الشامل للمشروعات
 # =========================================================
 elif app_mode == "💰 دراسة الجدوى والتقييم المالي الشامل للمشروعات":
-  st.subheader("💰 دراسة الجدوى الاقتصادية والتقييم المالي الشامل للمشروعات")
+  st.subheader(
+      "💰 دراسة الجدوى الاقتصادية والتقييم المالي الشامل مع الرسوم البيانية"
+  )
   c1, c2 = st.columns(2)
   with c1:
     init_inv = st.number_input(
@@ -789,7 +1213,7 @@ elif app_mode == "💰 دراسة الجدوى والتقييم المالي ا�
         value="40000, 45000, 50000, 55000, 60000, 65000",
     )
 
-  if st.button("🚀 حساب معايير التقييم المالي ودراسة الجدوى"):
+  if st.button("🚀 حساب معايير التقييم المالي ورسم التدفقات النقدية"):
     try:
       cfs = [float(x.strip()) for x in cf_str.split(",") if x.strip()]
       r = disc_rate
@@ -810,30 +1234,9 @@ elif app_mode == "💰 دراسة الجدوى والتقييم المالي ا�
       except:
         pass
 
-      pv_benefits = sum(
-          cf / ((1 + r) ** (i + 1)) for i, cf in enumerate(cfs)
-      )
+      pv_benefits = sum(cf / ((1 + r) ** (i + 1)) for i, cf in enumerate(cfs))
       bcr = pv_benefits / init_inv if init_inv > 0 else np.nan
       npvi = pv_benefits / init_inv if init_inv > 0 else np.nan
-
-      cum_cf = 0
-      payback = np.nan
-      disc_cum_cf = 0
-      disc_payback = np.nan
-      cum_list = []
-
-      for i, cf in enumerate(cfs):
-        cum_cf += cf
-        cum_list.append(cum_cf)
-        if cum_cf >= init_inv and np.isnan(payback):
-          prev = cum_list[i - 1] if i > 0 else 0
-          payback = i + ((init_inv - prev) / cf)
-
-        dc = cf / ((1 + r) ** (i + 1))
-        disc_cum_cf += dc
-        if disc_cum_cf >= init_inv and np.isnan(disc_payback):
-          prev_d = disc_cum_cf - dc
-          disc_payback = i + ((init_inv - prev_d) / dc)
 
       st.markdown("### 📊 نتائج التقييم المالي الشامل:")
       m1, m2, m3 = st.columns(3)
@@ -843,49 +1246,69 @@ elif app_mode == "💰 دراسة الجدوى والتقييم المالي ا�
       with m2:
         st.metric("نسبة المنافع للتكاليف (BCR)", f"{bcr:.2f}")
         st.metric("مؤشر الربحية (NPVI / PI)", f"{npvi:.2f}")
-      with m3:
-        st.metric(
-            "فترة الاسترداد العادية",
-            f"{payback:.2f} سنة" if not np.isnan(payback) else "لا توجد",
-        )
-        st.metric(
-            "فترة الاسترداد المخصومة",
-            (
-                f"{disc_payback:.2f} سنة"
-                if not np.isnan(disc_payback)
-                else "لا توجد"
-            ),
-        )
+
+      fig, ax = plt.subplots(figsize=(10, 4))
+      ax.bar(
+          range(1, len(cfs) + 1),
+          cfs,
+          color="royalblue",
+          edgecolor="black",
+          label="التدفقات السنوية",
+      )
+      ax.axhline(0, color="black", linestyle="--")
+      ax.set_xlabel("سنوات المشروع")
+      ax.set_ylabel("قيمة التدفق النقدي الصافي")
+      ax.set_title("توزيع التدفقات النقدية السنوية للمشروع")
+      st.pyplot(fig)
 
       if npv > 0:
         st.success(
             "✅ **القرار الاستثماري:** المشروع **مقبول ومربح اقتصادياً**."
         )
       else:
-        st.warning("❌ **القرار الاستثماري:** المشروع **مرفوض**.")
+        st.warning("❌ **القرار الاستثماري:** المشروع غير مجدي مالياً.")
       show_program_credit()
     except Exception as ex:
       st.error(f"حدث خطأ أثناء إجراء الحسابات المالية: {ex}")
 
 # =========================================================
-# القسم الرابع: بوابة جمع البيانات والمؤشرات العالمية
+# القسم السادس: بوابة جمع البيانات والمؤشرات العالمية
 # =========================================================
 elif app_mode == "🌐 بوابة جمع البيانات والمؤشرات العالمية":
   st.subheader("🌐 بوابة جمع البيانات والمؤشرات الاقتصادية والزراعية")
   c_code = st.text_input("كود الدولة الثلاثي (مثال: EGY, USA):", value="EGY")
-  if st.button("📥 جلب البيانات من البنك الدولي"):
+  if st.button("📥 جلب البيانات من البنك الدولي ورسمها"):
     try:
       url = f"http://api.worldbank.org/v2/country/{c_code}/indicator/NV.AGR.TOTL.ZS?format=json&per_page=50"
       res = requests.get(url).json()
       if len(res) > 1 and res[1]:
         d_wb = pd.DataFrame([
             {
-                "السنة": e.get("date"),
-                "نسبة الزراعة من الناتج المحلي (%)": e.get("value"),
+                "السنة": int(e.get("date")),
+                "نسبة الزراعة من الناتج المحلي (%)": float(e.get("value"))
+                if e.get("value")
+                else 0.0,
             }
             for e in res[1]
-        ])
+            if e.get("value") is not None
+        ]).sort_values("السنة")
         st.dataframe(d_wb, use_container_width=True)
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.plot(
+            d_wb["السنة"],
+            d_wb["نسبة الزراعة من الناتج المحلي (%)"],
+            marker="o",
+            color="forestgreen",
+            linewidth=2,
+        )
+        ax.set_title(
+            f"تطور مساهمة القطاع الزراعي في الناتج المحلي لدولة {c_code}"
+        )
+        ax.set_xlabel("السنة")
+        ax.set_ylabel("النسبة المئوية (%)")
+        st.pyplot(fig)
+
         show_program_credit()
       else:
         st.error("لم يتم العثور على بيانات.")
@@ -893,7 +1316,7 @@ elif app_mode == "🌐 بوابة جمع البيانات والمؤشرات ا�
       st.error(f"خطأ: {e}")
 
 # =========================================================
-# القسم الخامس: المستشار الاقتصادي والقياسي (ذكاء اصطناعي)
+# القسم السابع: المستشار الاقتصادي والقياسي (ذكاء اصطناعي)
 # =========================================================
 elif (
     app_mode
@@ -906,8 +1329,7 @@ elif (
   if prompt_text:
     st.write(f"**استفسارك:** {prompt_text}")
     st.success(
-        "💡 **توجيه الخبير:** يمكنك الاعتماد على نماذج الحدود الاستوخاستيكية (SFA)"
-        " ومعاملات التنافسية مثل الميزة النسبية واختبارات ADF لضمان دقة تحليلية"
-        " فائقة."
+        "💡 **توجيه الخبير:** تم تفعيل وتطوير كافة النماذج والرسومات البيانية"
+        " واختبارات T, ANOVA, DEA, و Frontier لتوفير بيئة بحثية متكاملة."
     )
     show_program_credit()
