@@ -59,25 +59,24 @@ if uploaded_file is not None:
         ],
     )
 
-    if st.button("🚀 تشغيل التحليل وإصدار التقرير"):
+    # 1. دالة الإنتاج الخطية (OLS)
+    if model_choice == "1. دالة الإنتاج الخطية (OLS)":
+      st.subheader("📈 نتائج دالة الإنتاج الخطية (OLS)")
+      col1, col2 = st.columns(2)
+      with col1:
+        y_col = st.selectbox(
+            "اختر المتغير التابع (الإنتاج / العائد):",
+            columns_list,
+            key="ols_y",
+        )
+      with col2:
+        x_cols = st.multiselect(
+            "اختر المتغيرات المستقلة (المدخلات):",
+            [c for c in columns_list if c != y_col],
+            key="ols_x",
+        )
 
-      # 1. دالة الإنتاج الخطية (OLS)
-      if model_choice == "1. دالة الإنتاج الخطية (OLS)":
-        st.subheader("📈 نتائج دالة الإنتاج الخطية (OLS)")
-        col1, col2 = st.columns(2)
-        with col1:
-          y_col = st.selectbox(
-              "اختر المتغير التابع (الإنتاج / العائد):",
-              columns_list,
-              key="ols_y",
-          )
-        with col2:
-          x_cols = st.multiselect(
-              "اختر المتغيرات المستقلة (المدخلات):",
-              [c for c in columns_list if c != y_col],
-              key="ols_x",
-          )
-
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_ols"):
         if y_col and x_cols:
           try:
             temp_df = df[[y_col] + x_cols].apply(
@@ -119,23 +118,22 @@ if uploaded_file is not None:
               "يرجى اختيار المتغير التابع والمتغيرات المستقلة لإتمام التحليل."
           )
 
-      # 2. دالة كوب دوجلاس
-      elif model_choice == "2. دالة إنتاج كوب-دوجلاس (Cobb-Douglas)":
-        st.subheader("📉 نتائج دالة كوب-دوجلاس اللوغاريتمية (Log-Log Model)")
-        col1, col2 = st.columns(2)
-        with col1:
-          y_col = st.selectbox(
-              "اختر المتغير التابع (الإنتاج / العائد):",
-              columns_list,
-              key="cd_y",
-          )
-        with col2:
-          x_cols = st.multiselect(
-              "اختر المتغيرات المستقلة (المدخلات):",
-              [c for c in columns_list if c != y_col],
-              key="cd_x",
-          )
+    # 2. دالة كوب دوجلاس
+    elif model_choice == "2. دالة إنتاج كوب-دوجلاس (Cobb-Douglas)":
+      st.subheader("📉 نتائج دالة كوب-دوجلاس اللوغاريتمية (Log-Log Model)")
+      col1, col2 = st.columns(2)
+      with col1:
+        y_col = st.selectbox(
+            "اختر المتغير التابع (الإنتاج / العائد):", columns_list, key="cd_y"
+        )
+      with col2:
+        x_cols = st.multiselect(
+            "اختر المتغيرات المستقلة (المدخلات):",
+            [c for c in columns_list if c != y_col],
+            key="cd_x",
+        )
 
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_cd"):
         if y_col and x_cols:
           try:
             temp_df = df[[y_col] + x_cols].apply(
@@ -195,21 +193,22 @@ if uploaded_file is not None:
         else:
           st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
-      # 3. دالة الإنتاج التربيعية
-      elif model_choice == "3. دالة الإنتاج التربيعية (Quadratic)":
-        st.subheader("📐 نتائج دالة الإنتاج التربيعية (لقياس تناقص الغلة)")
-        col1, col2 = st.columns(2)
-        with col1:
-          y_col = st.selectbox(
-              "اختر المتغير التابع (الإنتاج):", columns_list, key="q_y"
-          )
-        with col2:
-          x_col = st.selectbox(
-              "اختر المتغير المراد اختبار تناقص غلته:",
-              [c for c in columns_list if c != y_col],
-              key="q_x",
-          )
+    # 3. دالة الإنتاج التربيعية
+    elif model_choice == "3. دالة الإنتاج التربيعية (Quadratic)":
+      st.subheader("📐 نتائج دالة الإنتاج التربيعية (لقياس تناقص الغلة)")
+      col1, col2 = st.columns(2)
+      with col1:
+        y_col = st.selectbox(
+            "اختر المتغير التابع (الإنتاج):", columns_list, key="q_y"
+        )
+      with col2:
+        x_col = st.selectbox(
+            "اختر المتغير المراد اختبار تناقص غلته:",
+            [c for c in columns_list if c != y_col],
+            key="q_x",
+        )
 
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_q"):
         if y_col and x_col:
           try:
             temp_df = df[[y_col, x_col]].apply(
@@ -238,21 +237,22 @@ if uploaded_file is not None:
         else:
           st.warning("يرجى اختيار المتغيرات المطلوبة.")
 
-      # 4. تحليل الاتجاه العام
-      elif model_choice == "4. تحليل الاتجاه العام (Trend Analysis)":
-        st.subheader("📅 تحليل الاتجاه العام للمتغيرات عبر الزمن")
-        col1, col2 = st.columns(2)
-        with col1:
-          year_col = st.selectbox(
-              "اختر عمود الزمن أو السنوات:", columns_list, key="t_yr"
-          )
-        with col2:
-          target_var = st.selectbox(
-              "اختر المتغير المراد دراسة اتجاهه العام:",
-              [c for c in columns_list if c != year_col],
-              key="t_var",
-          )
+    # 4. تحليل الاتجاه العام
+    elif model_choice == "4. تحليل الاتجاه العام (Trend Analysis)":
+      st.subheader("📅 تحليل الاتجاه العام للمتغيرات عبر الزمن")
+      col1, col2 = st.columns(2)
+      with col1:
+        year_col = st.selectbox(
+            "اختر عمود الزمن أو السنوات:", columns_list, key="t_yr"
+        )
+      with col2:
+        target_var = st.selectbox(
+            "اختر المتغير المراد دراسة اتجاهه العام:",
+            [c for c in columns_list if c != year_col],
+            key="t_var",
+        )
 
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_t"):
         if year_col and target_var:
           try:
             temp_df = df[[year_col, target_var]].apply(
@@ -283,9 +283,7 @@ if uploaded_file is not None:
               st.markdown("---")
               st.markdown("### 📝 التقرير التحليلي باللغة العربية")
               slope = trend_model.params[year_col]
-              direction = (
-                  "تصاعدي (موجب)" if slope > 0 else "تنازلي (سالب)"
-              )
+              direction = "تصاعدي (موجب)" if slope > 0 else "تنازلي (سالب)"
               st.success(
                   f"• **معدل التغير السنوي:** الميل الزمني للمتغير ({target_var})"
                   f" بلغ ({slope:.4f}) سنوياً، وهو اتجاه عام **{direction}** خلال"
@@ -296,27 +294,28 @@ if uploaded_file is not None:
         else:
           st.warning("يرجى اختيار عمود الزمن والمتغير المستهدف.")
 
-      # 5. تحليل الكفاءة DEA
-      elif model_choice == (
-          "5. تحليل الكفاءة باستخدام مغلف البيانات (DEA - Data Envelopment"
-          " Analysis)"
-      ):
-        st.subheader(
-            "📐 تحليل الكفاءة الفنية باستخدام مغلف البيانات (DEA - Input-Oriented"
-            " CCR)"
+    # 5. تحليل الكفاءة DEA
+    elif model_choice == (
+        "5. تحليل الكفاءة باستخدام مغلف البيانات (DEA - Data Envelopment"
+        " Analysis)"
+    ):
+      st.subheader(
+          "📐 تحليل الكفاءة الفنية باستخدام مغلف البيانات (DEA - Input-Oriented"
+          " CCR)"
+      )
+      col1, col2 = st.columns(2)
+      with col1:
+        y_col = st.selectbox(
+            "اختر متغير المخرج (الإنتاج):", columns_list, key="dea_y"
         )
-        col1, col2 = st.columns(2)
-        with col1:
-          y_col = st.selectbox(
-              "اختر متغير المخرج (الإنتاج):", columns_list, key="dea_y"
-          )
-        with col2:
-          x_cols = st.multiselect(
-              "اختر متغيرات المدخلات:",
-              [c for c in columns_list if c != y_col],
-              key="dea_x",
-          )
+      with col2:
+        x_cols = st.multiselect(
+            "اختر متغيرات المدخلات:",
+            [c for c in columns_list if c != y_col],
+            key="dea_x",
+        )
 
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_dea"):
         if y_col and x_cols:
           try:
             temp_df = df[[y_col] + x_cols].apply(
@@ -370,23 +369,22 @@ if uploaded_file is not None:
         else:
           st.warning("يرجى اختيار المخرج والمدخلات المطلوبة.")
 
-      # 6. الهوامش التسويقية
-      elif model_choice == "6. حساب الهوامش التسويقية (Marketing Margins)":
-        st.subheader("💰 تحليل الهوامش التسويقية ونصيب المزارع")
-        col1, col2 = st.columns(2)
-        with col1:
-          farm_col = st.selectbox(
-              "اختر عمود سعر المزرعة (Farm Price):",
-              columns_list,
-              key="m_farm",
-          )
-        with col2:
-          retail_col = st.selectbox(
-              "اختر عمود سعر التجزئة / المستهلك (Retail Price):",
-              columns_list,
-              key="m_retail",
-          )
+    # 6. الهوامش التسويقية
+    elif model_choice == "6. حساب الهوامش التسويقية (Marketing Margins)":
+      st.subheader("💰 تحليل الهوامش التسويقية ونصيب المزارع")
+      col1, col2 = st.columns(2)
+      with col1:
+        farm_col = st.selectbox(
+            "اختر عمود سعر المزرعة (Farm Price):", columns_list, key="m_farm"
+        )
+      with col2:
+        retail_col = st.selectbox(
+            "اختر عمود سعر التجزئة / المستهلك (Retail Price):",
+            columns_list,
+            key="m_retail",
+        )
 
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_m"):
         if farm_col and retail_col:
           try:
             temp_df = df[[farm_col, retail_col]].apply(
@@ -435,25 +433,26 @@ if uploaded_file is not None:
         else:
           st.warning("يرجى اختيار أعمدة أسعار المزرعة والتجزئة.")
 
-      # 7. تحليل حد الإنتاج القياسي (Frontier)
-      elif model_choice == (
-          "7. تحليل حد الإنتاج القياسي (Frontier Analysis - COLS)"
-      ):
-        st.subheader(
-            "⚡ تحليل حد الإنتاج وتقدير الكفاءة الفنية (Corrected OLS Frontier)"
+    # 7. تحليل حد الإنتاج القياسي (Frontier)
+    elif model_choice == (
+        "7. تحليل حد الإنتاج القياسي (Frontier Analysis - COLS)"
+    ):
+      st.subheader(
+          "⚡ تحليل حد الإنتاج وتقدير الكفاءة الفنية (Corrected OLS Frontier)"
+      )
+      col1, col2 = st.columns(2)
+      with col1:
+        y_col = st.selectbox(
+            "اختر المتغير التابع (الإنتاج):", columns_list, key="f_y"
         )
-        col1, col2 = st.columns(2)
-        with col1:
-          y_col = st.selectbox(
-              "اختر المتغير التابع (الإنتاج):", columns_list, key="f_y"
-          )
-        with col2:
-          x_cols = st.multiselect(
-              "اختر المتغيرات المستقلة (المدخلات):",
-              [c for c in columns_list if c != y_col],
-              key="f_x",
-          )
+      with col2:
+        x_cols = st.multiselect(
+            "اختر المتغيرات المستقلة (المدخلات):",
+            [c for c in columns_list if c != y_col],
+            key="f_x",
+        )
 
+      if st.button("🚀 تشغيل التحليل وإصدار التقرير", key="btn_f"):
         if y_col and x_cols:
           try:
             temp_df = df[[y_col] + x_cols].apply(
