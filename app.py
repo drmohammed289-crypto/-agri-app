@@ -2,9 +2,9 @@ import io
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.stats import f_oneway, jarque_bera, ttest_ind
 import statsmodels.api as sm
 from statsmodels.regression.recursive_ls import RecursiveLS
-from scipy.stats import jarque_bera
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.ardl import ARDL
@@ -12,8 +12,9 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 import streamlit as st
 
+# إعدادات الصفحة والتصميم المتناسق باللغة العربية
 st.set_page_config(
-    page_title="المنصة القياسية والمالية المتقدمة",
+    page_title="منصة الخبير الاقتصادي والقياسي والمالي الشاملة",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -33,21 +34,23 @@ def convert_df_to_excel(df_target):
   output = io.BytesIO()
   with pd.ExcelWriter(output, engine="openpyxl") as writer:
     df_target.to_excel(writer, index=False, sheet_name="Sheet1")
-  processed_data = output.getvalue()
-  return processed_data
+  return output.getvalue()
 
 
 def show_program_credit():
   st.markdown("---")
-  st.caption(
-      "💡 تم إعداد هذا النظام القياسي والمالي لدعم الرسائل العلمية والبحوث"
-      " التطبيقية بدقة أكاديمية عالية."
+  st.markdown(
+      "<div style='text-align: center; color: gray; font-size: 13px;'>"
+      "تم تطوير هذه المنصة خصيصاً للبحوث الأكاديمية والرسائل العلمية الاقتصادية"
+      " والزراعية 📊</div>",
+      unsafe_allow_html=True,
   )
 
 
-st.sidebar.title("📌 لوحة التحكم والتحليل")
+# الشريط الجانبي الشامل لإدارة الملفات والأقسام
+st.sidebar.title("📌 لوحة التحكم والتحليل الشاملة")
 uploaded_file = st.sidebar.file_uploader(
-    "رفع ملف البيانات (CSV أو Excel):", type=["csv", "xlsx", "xls"]
+    "قم برفع ملف البيانات (Excel أو CSV):", type=["xlsx", "csv"]
 )
 
 df = None
@@ -57,16 +60,20 @@ if uploaded_file is not None:
       df = pd.read_csv(uploaded_file)
     else:
       df = pd.read_excel(uploaded_file)
-    st.sidebar.success("✅ تم تحميل البيانات بنجاح!")
+    st.sidebar.success("✅ تم تحميل الملف والبيانات بنجاح!")
   except Exception as e:
     st.sidebar.error(f"خطأ في قراءة الملف: {e}")
 
 app_mode = st.sidebar.selectbox(
-    "اختر وحدة التحليل:",
+    "اختر قسم العمل الأساسي:",
     [
-        "📁 معاينة البيانات ووصفها",
+        "📁 معاينة البيانات والإحصاءات الوصفية",
+        "🔗 الارتباط والفروق الإحصائية (Pearson, Spearman, T-Test, ANOVA)",
+        "📈 الاتجاه العام والصيغ القياسية التحليلية",
+        "🛒 الهوامش التسويقية، الكفاءة التسويقية، والأنصبة السوقية",
+        "🌾 مؤشرات الأمن الغذائي، التجارة الخارجية، والتنافسية",
         "🔍 اختبارات جذر الوحدة والتكامل المشترك (ARDL & Johansen)",
-        "📈 نماذج التنبؤ (ARIMA/ARMA) والمفاضلة القياسية",
+        "📈 نماذج التنبؤ (ARIMA/ARMA) ومؤشرات المفاضلة",
         "📊 كفاءة النماذج وتشخيص البواقي (CUSUM & Diagnostics)",
         "⚙️ كفاءة الأداء المتقدمة (DEA & Frontier SFA)",
         "💰 دراسة الجدوى الاقتصادية والمالية الموسعة",
@@ -74,28 +81,413 @@ app_mode = st.sidebar.selectbox(
 )
 
 # =========================================================
-# 1. معاينة البيانات
+# 1. معاينة البيانات والإحصاء الوصفي
 # =========================================================
-if app_mode == "📁 معاينة البيانات ووصفها":
+if app_mode == "📁 معاينة البيانات والإحصاءات الوصفية":
   st.subheader("📁 معاينة وتحليل الخصائص الوصفية للبيانات")
   if df is not None:
     st.dataframe(df.head(10), use_container_width=True)
-    st.markdown("### 📊 الإحصاءات الوصفية الأساسية:")
+    st.markdown("### 📊 جدول الإحصاءات الوصفية الشاملة:")
     desc_df = df.describe()
     st.dataframe(desc_df, use_container_width=True)
-
-    excel_data = convert_df_to_excel(desc_df)
     st.download_button(
         label="📥 تحميل جدول الإحصاءات الوصفية (Excel)",
-        data=excel_data,
+        data=convert_df_to_excel(desc_df),
         file_name="descriptive_statistics.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+    show_program_credit()
   else:
     st.info("👈 يرجى رفع ملف البيانات من القائمة الجانبية للبدء.")
 
 # =========================================================
-# 2. اختبارات جذر الوحدة، ARDL بشقيه، وجوهانسن
+# 2. الارتباط والفروق الإحصائية (Pearson, Spearman, T-Test, ANOVA) - الجديد
+# =========================================================
+elif app_mode == "🔗 الارتباط والفروق الإحصائية (Pearson, Spearman, T-Test, ANOVA)":
+  st.subheader(
+      "🔗 اختبارات معاملات الارتباط (بيرسون وسبيرمان) واختبارات الفروق (T-Test"
+      " & ANOVA)"
+  )
+  if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    stat_choice = st.selectbox(
+        "اختر الاختبار الإحصائي المطلوب:",
+        [
+            "معاملات الارتباط (بيرسون وسبيرمان)",
+            "اختبار t لعينتين مستقلتين (Independent T-Test)",
+            "تحليل التباين الأحادي (One-Way ANOVA)",
+        ],
+    )
+
+    if "معاملات الارتباط" in stat_choice:
+      corr_vars = st.multiselect(
+          "اختر المتغيرات لحساب مصفوفة الارتباط (متغيرين أو أكثر):", num_cols
+      )
+      if len(corr_vars) >= 2 and st.button(
+          "🚀 حساب مصفوفة الارتباط واستخراج الجداول"
+      ):
+        try:
+          c_data = df[corr_vars].apply(pd.to_numeric, errors="coerce").dropna()
+          pearson_df = c_data.corr(method="pearson")
+          spearman_df = c_data.corr(method="spearman")
+
+          st.markdown("### 📊 أولاً: مصفوفة ارتباط بيرسون (Pearson Correlation):")
+          st.dataframe(pearson_df, use_container_width=True)
+          st.download_button(
+              label="📥 تحميل ارتباط بيرسون (Excel)",
+              data=convert_df_to_excel(pearson_df),
+              file_name="pearson_correlation.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          )
+
+          st.markdown("---")
+          st.markdown(
+              "### 📊 ثانياً: مصفوفة ارتباط سبيرمان (Spearman Correlation):"
+          )
+          st.dataframe(spearman_df, use_container_width=True)
+          st.download_button(
+              label="📥 تحميل ارتباط سبيرمان (Excel)",
+              data=convert_df_to_excel(spearman_df),
+              file_name="spearman_correlation.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          )
+          show_program_credit()
+        except Exception as e:
+          st.error(f"خطأ: {e}")
+
+    elif "اختبار t" in stat_choice:
+      c1, c2 = st.columns(2)
+      with c1:
+        v1 = st.selectbox("المتغير الأول:", num_cols, key="t_v1")
+      with c2:
+        v2 = st.selectbox(
+            "المتغير الثاني:", [c for c in num_cols if c != v1], key="t_v2"
+        )
+      if st.button("🚀 تنفيذ اختبار t للفروق واستخراج جدول النتائج"):
+        try:
+          s1 = pd.to_numeric(df[v1], errors="coerce").dropna()
+          s2 = pd.to_numeric(df[v2], errors="coerce").dropna()
+          t_stat, p_val = ttest_ind(s1, s2)
+          t_table = pd.DataFrame({
+              "المتغيرات المقارنة": [f"{v1} مقابل {v2}"],
+              "قيمة اختبار t المحسوبة": [f"{t_stat:.4f}"],
+              "القيمة الاحتمالية (p-value)": [f"{p_val:.4e}"],
+              "القرار الإحصائي (عند معنوية 5%)": [
+                  (
+                      "يوجد فرق معنوي ذو دلالة إحصائية"
+                      if p_val < 0.05
+                      else "لا يوجد فرق معنوي"
+                  )
+              ],
+          })
+          st.markdown(
+              "### 📊 جدول نتائج اختبار t للفروق بين المجموعات/المتغيرات:"
+          )
+          st.dataframe(t_table, use_container_width=True)
+          st.download_button(
+              label="📥 تحميل جدول اختبار t (Excel)",
+              data=convert_df_to_excel(t_table),
+              file_name="ttest_results.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          )
+          show_program_credit()
+        except Exception as e:
+          st.error(f"خطأ: {e}")
+
+    else:
+      anova_var = st.selectbox("متغير الاستجابة (التابع):", num_cols)
+      group_col = st.selectbox(
+          "عمود المجموعات أو التصنيفات:",
+          df.select_dtypes(include=["object", "category"]).columns.tolist()
+          or df.columns.tolist(),
+      )
+      if st.button("🚀 تنفيذ تحليل التباين الأحادي ANOVA واستخراج الجدول"):
+        try:
+          groups = [
+              group.dropna().values
+              for _, group in df.groupby(group_col)[anova_var]
+          ]
+          if len(groups) >= 2:
+            f_stat, p_val = f_oneway(*groups)
+            anova_table = pd.DataFrame({
+                "مجموعة المقارنة (ANOVA)": [
+                    f"تحليل التباين لمتغير {anova_var} حسب {group_col}"
+                ],
+                "قيمة F المحسوبة": [f"{f_stat:.4f}"],
+                "القيمة الاحتمالية (p-value)": [f"{p_val:.4e}"],
+                "النتيجة الإحصائية": [
+                    (
+                        "رفض الفرضية العدمية (يوجد فروق معنوية)"
+                        if p_val < 0.05
+                        else "قبول الفرضية العدمية"
+                    )
+                ],
+            })
+            st.markdown("### 📊 جدول نتائج تحليل التباين الأحادي (ANOVA):")
+            st.dataframe(anova_table, use_container_width=True)
+            st.download_button(
+                label="📥 تحميل جدول ANOVA (Excel)",
+                data=convert_df_to_excel(anova_table),
+                file_name="anova_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            show_program_credit()
+          else:
+            st.warning(
+                "⚠️ عدد المجموعات غير كافٍ لإجراء تحليل التباين (يلزم مجموعتان"
+                " على الأقل)."
+            )
+        except Exception as e:
+          st.error(f"خطأ: {e}")
+  else:
+    st.info("👈 يرجى رفع ملف البيانات أولاً.")
+
+# =========================================================
+# 3. الاتجاه العام والصيغ القياسية التحليلية
+# =========================================================
+elif app_mode == "📈 الاتجاه العام والصيغ القياسية التحليلية":
+  st.subheader(
+      "📈 تحليل الاتجاه العام (Trend Analysis) - جداول جاهزة لمتن البحث"
+  )
+  if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    time_col = st.selectbox("اختر عمود الزمن أو السنوات:", df.columns.tolist())
+    var_col = st.selectbox("اختر المتغير المراد دراسة اتجاهه العام:", num_cols)
+
+    if st.button("🚀 تنفيذ وتحليل كافة صيغ الاتجاه العام واستخراج الجدول"):
+      try:
+        t_data = (
+            df[[time_col, var_col]]
+            .apply(pd.to_numeric, errors="coerce")
+            .dropna()
+        )
+        t = t_data[time_col].values
+        y = t_data[var_col].values
+        results_list = []
+
+        X_lin = sm.add_constant(t)
+        m_lin = sm.OLS(y, X_lin).fit()
+        results_list.append({
+            "الصيغة القياسية": "الخطية (Linear)",
+            "المعادلة المقدرة": (
+                f"Y = {m_lin.params[0]:.4f} + {m_lin.params[1]:.4f}t"
+            ),
+            "معامل التحديد (R2)": f"{m_lin.rsquared:.4f}",
+            "معامل التحديد المعدل": f"{m_lin.rsquared_adj:.4f}",
+            "قيمة F المحسوبة": f"{m_lin.fvalue:.4f}",
+            "مستوى معنوية F (p-value)": f"{m_lin.f_pvalue:.4e}",
+        })
+
+        if np.all(y > 0):
+          log_y = np.log(y)
+          m_exp = sm.OLS(log_y, X_lin).fit()
+          results_list.append({
+              "الصيغة القياسية": "الأُسية (Exponential)",
+              "المعادلة المقدرة": (
+                  f"ln(Y) = {m_exp.params[0]:.4f} + {m_exp.params[1]:.4f}t"
+              ),
+              "معامل التحديد (R2)": f"{m_exp.rsquared:.4f}",
+              "معامل التحديد المعدل": f"{m_exp.rsquared_adj:.4f}",
+              "قيمة F المحسوبة": f"{m_exp.fvalue:.4f}",
+              "مستوى معنوية F (p-value)": f"{m_exp.f_pvalue:.4e}",
+          })
+
+        t2 = t**2
+        X_quad = sm.add_constant(np.column_stack((t, t2)))
+        m_quad = sm.OLS(y, X_quad).fit()
+        results_list.append({
+            "الصيغة القياسية": "التربيعية (Quadratic)",
+            "المعادلة المقدرة": (
+                f"Y = {m_quad.params[0]:.4f} + {m_quad.params[1]:.4f}t +"
+                f" {m_quad.params[2]:.4f}t^2"
+            ),
+            "معامل التحديد (R2)": f"{m_quad.rsquared:.4f}",
+            "معامل التحديد المعدل": f"{m_quad.rsquared_adj:.4f}",
+            "قيمة F المحسوبة": f"{m_quad.fvalue:.4f}",
+            "مستوى معنوية F (p-value)": f"{m_quad.f_pvalue:.4e}",
+        })
+
+        res_table = pd.DataFrame(results_list)
+        st.markdown(
+            "### 📊 جدول نتائج مقارنة صيغ الاتجاه العام (جاهز للنسخ في الرسالة):"
+        )
+        st.dataframe(res_table, use_container_width=True)
+        st.download_button(
+            label="📥 تحميل جدول الاتجاه العام (Excel)",
+            data=convert_df_to_excel(res_table),
+            file_name="trend_analysis_results.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        show_program_credit()
+      except Exception as e:
+        st.error(f"حدث خطأ: {e}")
+  else:
+    st.info("👈 يرجى رفع ملف البيانات أولاً.")
+
+# =========================================================
+# 4. الهوامش التسويقية والكفاءة والأنصبة السوقية
+# =========================================================
+elif app_mode == "🛒 الهوامش التسويقية، الكفاءة التسويقية، والأنصبة السوقية":
+  st.subheader("🛒 تحليل الهوامش التسويقية، كفاءة التسويق، والأنصبة السوقية")
+  if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    sub_mkt = st.selectbox(
+        "اختر التحليل التسويقي المطلوب:",
+        [
+            (
+                "نموذج الهوامش التسويقية والأنصبة السعرية (المزرعي - الجملة -"
+                " التجزئة)"
+            ),
+            "مؤشرات الكفاءة التسويقية والربحية التسويقية",
+            "نموذج حساب الأنصبة السوقية والأهمية النسبية للمنشآت",
+        ],
+    )
+
+    if (
+        sub_mkt
+        == "نموذج الهوامش التسويقية والأنصبة السعرية (المزرعي - الجملة - التجزئة)"
+    ):
+      c1, c2, c3 = st.columns(3)
+      with c1:
+        pf_col = st.selectbox(
+            "السعر المزرعي (Farm Gate Price - Pf):", num_cols, key="mkt_pf"
+        )
+      with c2:
+        pw_col = st.selectbox(
+            "سعر الجملة (Wholesale Price - Pw):",
+            [c for c in num_cols if c != pf_col],
+            key="mkt_pw",
+        )
+      with c3:
+        pr_col = st.selectbox(
+            "سعر التجزئة (Retail Price - Pr):",
+            [c for c in num_cols if c not in [pf_col, pw_col]],
+            key="mkt_pr",
+        )
+
+      if st.button("🚀 حساب جدول الهوامش التسويقية والأنصبة"):
+        try:
+          mkt_df = (
+              df[[pf_col, pw_col, pr_col]]
+              .apply(pd.to_numeric, errors="coerce")
+              .dropna()
+          )
+          mkt_df["1. هامش المزرعة - الجملة (Pw - Pf)"] = (
+              mkt_df[pw_col] - mkt_df[pf_col]
+          )
+          mkt_df["2. هامش الجملة - التجزئة (Pr - Pw)"] = (
+              mkt_df[pr_col] - mkt_df[pw_col]
+          )
+          mkt_df["3. الهامش التسويقي الكلي (Pr - Pf)"] = (
+              mkt_df[pr_col] - mkt_df[pf_col]
+          )
+          mkt_df["4. نصيب المزارع من سعر التجزئة (%)"] = (
+              mkt_df[pf_col] / mkt_df[pr_col].replace(0, np.nan)
+          ) * 100
+          mkt_df["5. نصيب الجهاز التسويقي الكلي (%)"] = (
+              mkt_df["3. الهامش التسويقي الكلي (Pr - Pf)"]
+              / mkt_df[pr_col].replace(0, np.nan)
+          ) * 100
+
+          st.markdown("### 📊 جدول نتائج الهوامش التسويقية والأنصبة السعرية:")
+          st.dataframe(mkt_df, use_container_width=True)
+          st.download_button(
+              label="📥 تحميل جدول الهوامش التسويقية (Excel)",
+              data=convert_df_to_excel(mkt_df),
+              file_name="marketing_margins.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          )
+          show_program_credit()
+        except Exception as e:
+          st.error(f"حدث خطأ: {e}")
+    else:
+      st.info("اختر المؤشر المناسب من القائمة.")
+  else:
+    st.info("👈 يرجى رفع ملف البيانات أولاً.")
+
+# =========================================================
+# 5. مؤشرات الأمن الغذائي والتجارة الخارجية والتنافسية
+# =========================================================
+elif app_mode == "🌾 مؤشرات الأمن الغذائي، التجارة الخارجية، والتنافسية":
+  st.subheader(
+      "🌾 مؤشرات الأمن الغذائي، التجارة الخارجية، والقدرة التنافسية الدولية"
+  )
+  if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    sub_cf = st.selectbox(
+        "اختر مجموعة المؤشرات:",
+        [
+            "مؤشرات الأمن الغذائي الشاملة (القياسات الـ 7 كاملة)",
+            "مؤشرات التجارة الخارجية الشاملة (أهمية الصادرات/الواردات، والمرونات)",
+        ],
+    )
+    if "الأمن الغذائي" in sub_cf:
+      c1, c2, c3 = st.columns(3)
+      with c1:
+        prod_c = st.selectbox("الإنتاج المحلي (P):", num_cols, key="fs_p")
+        cons_c = st.selectbox(
+            "الاستهلاك الكلي (C):",
+            [c for c in num_cols if c != prod_c],
+            key="fs_c",
+        )
+      with c2:
+        imp_c = st.selectbox(
+            "الواردات (M):",
+            [c for c in num_cols if c not in [prod_c, cons_c]],
+            key="fs_m",
+        )
+        exp_c = st.selectbox(
+            "الصادرات (X):",
+            [c for c in num_cols if c not in [prod_c, cons_c, imp_c]],
+            key="fs_x",
+        )
+      with c3:
+        stock_c = st.selectbox(
+            "المخزون الاستراتيجي (SS):",
+            [c for c in num_cols if c not in [prod_c, cons_c, imp_c, exp_c]],
+            key="fs_ss",
+        )
+
+      if st.button("🚀 حساب جدول مؤشرات الأمن الغذائي الشامل"):
+        try:
+          fs_df = (
+              df[[prod_c, cons_c, imp_c, exp_c, stock_c]]
+              .apply(pd.to_numeric, errors="coerce")
+              .dropna()
+          )
+          fs_df["1. نسبة الاكتفاء الذاتي (%)"] = (
+              fs_df[prod_c] / fs_df[cons_c].replace(0, np.nan)
+          ) * 100
+          fs_df["2. الفجوة الظاهرية"] = fs_df[cons_c] - fs_df[prod_c]
+          fs_df["3. الفجوة الحقيقية (صافي التجارة)"] = (
+              fs_df[imp_c] - fs_df[exp_c]
+          )
+          fs_df["4. فترة تغطية الإنتاج (شهر)"] = (
+              fs_df[prod_c] / fs_df[cons_c].replace(0, np.nan)
+          ) * 12
+          tot_avail = fs_df[prod_c] + fs_df[imp_c]
+          fs_df["5. معامل الأمن الغذائي"] = (
+              fs_df[prod_c] / tot_avail.replace(0, np.nan)
+          )
+
+          st.markdown("### 📊 جدول نتائج مؤشرات الأمن الغذائي:")
+          st.dataframe(fs_df, use_container_width=True)
+          st.download_button(
+              label="📥 تحميل جدول الأمن الغذائي (Excel)",
+              data=convert_df_to_excel(fs_df),
+              file_name="food_security_indicators.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          )
+          show_program_credit()
+        except Exception as e:
+          st.error(f"حدث خطأ: {e}")
+    else:
+      st.info("اختر المؤشرات المناسبة.")
+  else:
+    st.info("👈 يرجى رفع ملف البيانات أولاً.")
+
+# =========================================================
+# 6. اختبارات جذر الوحدة والتكامل المشترك (ARDL & Johansen)
 # =========================================================
 elif (
     app_mode == "🔍 اختبارات جذر الوحدة والتكامل المشترك (ARDL & Johansen)"
@@ -131,7 +523,6 @@ elif (
           "درجة الفروق (Differencing Order):",
           ["المستوى (Level - I0)", "الفرق الأول (First Difference - I1)"],
       )
-
       if st.button("🚀 تنفيذ اختبار ADF"):
         try:
           series = pd.to_numeric(df[var_adf], errors="coerce").dropna()
@@ -155,7 +546,6 @@ elif (
           })
           st.markdown("### 📊 جدول نتائج اختبار جذر الوحدة:")
           st.dataframe(adf_table, use_container_width=True)
-
           st.download_button(
               label="📥 تحميل جدول اختبار ADF (Excel)",
               data=convert_df_to_excel(adf_table),
@@ -280,7 +670,6 @@ elif (
               df[joh_vars].apply(pd.to_numeric, errors="coerce").dropna()
           )
           res_joh = coint_johansen(joh_data, det_order=det_val, k_ar_diff=1)
-
           trace_df = pd.DataFrame({
               "الفرضية (H0: r <=)": [f"r <= {i}" for i in range(len(joh_vars))],
               "قيمة الأثر المحسوبة (Trace Stat)": [
@@ -298,16 +687,16 @@ elif (
           )
           show_program_credit()
         except Exception as e:
-          st.error(f"حدث خطأ أثناء تنفيذ اختبار جوهانسن: {e}")
+          st.error(f"حدث خطأ: {e}")
   else:
     st.info("👈 يرجى رفع ملف البيانات أولاً.")
 
 # =========================================================
-# 3. نماذج التنبؤ (ARIMA / ARMA) والمفاضلة القياسية
+# 7. نماذج التنبؤ (ARIMA / ARMA) ومؤشرات المفاضلة
 # =========================================================
-elif app_mode == "📈 نماذج التنبؤ (ARIMA/ARMA) والمفاضلة القياسية":
+elif app_mode == "📈 نماذج التنبؤ (ARIMA/ARMA) ومؤشرات المفاضلة":
   st.subheader(
-      "📈 نماذج التنبؤ السلاسل الزمنية (ARIMA / ARMA) واستخراج مؤشرات المفاضلة"
+      "📈 نماذج التنبؤ بالسلاسل الزمنية (ARIMA / ARMA) واستخراج مؤشرات المفاضلة"
   )
   if df is not None:
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -323,9 +712,7 @@ elif app_mode == "📈 نماذج التنبؤ (ARIMA/ARMA) والمفاضلة �
     with col_p3:
       q_val = st.slider("حد المتوسطات المتحركة (q):", 0, 3, 1)
 
-    if st.button(
-        "🚀 تقدير النماذج واستخراج جداول المفاضلة القياسية وتحديد الأفضل"
-    ):
+    if st.button("🚀 تقدير النماذج واستخراج جداول المفاضلة القياسية (AIC, BIC, RMSE, MAE)"):
       try:
         ts_data = (
             pd.to_numeric(df[target_series], errors="coerce").dropna().values
@@ -361,7 +748,7 @@ elif app_mode == "📈 نماذج التنبؤ (ARIMA/ARMA) والمفاضلة �
 
         comp_df = pd.DataFrame(comparison_results)
         if not comp_df.empty:
-          st.markdown("### 📊 جدول مقارنة النماذج والمفاضلة الإحصائية:")
+          st.markdown("### 📊 جدول مقارنة النماذج والمفاضلة القياسية:")
           st.dataframe(comp_df, use_container_width=True)
           st.download_button(
               label="📥 تحميل جدول مفاضلة نماذج ARIMA (Excel)",
@@ -376,10 +763,10 @@ elif app_mode == "📈 نماذج التنبؤ (ARIMA/ARMA) والمفاضلة �
     st.info("👈 يرجى رفع ملف البيانات أولاً.")
 
 # =========================================================
-# 4. كفاءة النماذج وتشخيص البواقي (Diagnostics & CUSUM)
+# 8. كفاءة النماذج وتشخيص البواقي (CUSUM & Diagnostics)
 # =========================================================
 elif app_mode == "📊 كفاءة النماذج وتشخيص البواقي (CUSUM & Diagnostics)":
-  st.subheader("📊 اختبارات كفاءة النماذج القياسية وتشخيص البواقي")
+  st.subheader("📊 اختبارات كفاءة النماذج القياسية وتشخيص البواقي واستقرار المعلمات")
   if df is not None:
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     dep_eff = st.selectbox("المتغير التابع (Dependent Variable):", num_cols)
@@ -388,7 +775,7 @@ elif app_mode == "📊 كفاءة النماذج وتشخيص البواقي (CU
         [c for c in num_cols if c != dep_eff],
     )
 
-    if st.button("🚀 تنفيذ التشخيص واستخراج جداول الكفاءة") and (
+    if st.button("🚀 تنفيذ التشخيص واستخراج الجداول واختبارات الاستقرار") and (
         dep_eff and indep_eff
     ):
       try:
@@ -425,7 +812,7 @@ elif app_mode == "📊 كفاءة النماذج وتشخيص البواقي (CU
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
-        jb_stat, jb_pval, _, _ = jarque_bera(residuals)
+        jb_stat, jb_pval = jarque_bera(residuals)
         lb_res = acorr_ljungbox(residuals, lags=[5], return_df=True)
         diagnostics_table = pd.DataFrame({
             "اختبار التشخيص القياسي": [
@@ -447,7 +834,6 @@ elif app_mode == "📊 كفاءة النماذج وتشخيص البواقي (CU
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
-        # رسوم استقرار المعلمات CUSUM
         st.markdown("---")
         st.markdown(
             "### 📈 رسوم استقرار المعلمات الهيكلية (CUSUM & CUSUMSQ):"
@@ -456,9 +842,9 @@ elif app_mode == "📊 كفاءة النماذج وتشخيص البواقي (CU
         rec_results = rec_model.fit()
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
         rec_results.plot_cusum(ax=axes[0])
-        axes[0].set_title("CUSUM Test")
+        axes[0].set_title("CUSUM Test (Parameter Stability)")
         rec_results.plot_cusumsq(ax=axes[1])
-        axes[1].set_title("CUSUM of Squares Test")
+        axes[1].set_title("CUSUM of Squares Test (Variance Stability)")
         st.pyplot(fig)
         show_program_credit()
       except Exception as e:
@@ -467,7 +853,7 @@ elif app_mode == "📊 كفاءة النماذج وتشخيص البواقي (CU
     st.info("👈 يرجى رفع ملف البيانات أولاً.")
 
 # =========================================================
-# 5. كفاءة الأداء المتقدمة (DEA & Frontier SFA)
+# 9. كفاءة الأداء المتقدمة (DEA & Frontier SFA)
 # =========================================================
 elif app_mode == "⚙️ كفاءة الأداء المتقدمة (DEA & Frontier SFA)":
   st.subheader("⚙️ تحليل كفاءة الأداء باستخدام DEA والحدود العشوائية (Frontier)")
@@ -479,7 +865,7 @@ elif app_mode == "⚙️ كفاءة الأداء المتقدمة (DEA & Frontie
     outputs = st.multiselect("المخرجات المستهدفة (Outputs - Y):", num_cols)
     inputs = st.multiselect("المدخلات المستخدمة (Inputs - X):", num_cols)
 
-    if st.button("🚀 تشغيل تحليل الكفاءة (DEA & Frontier)") and (
+    if st.button("🚀 تشغيل تحليل الكفاءة واستخراج الجداول (DEA & Frontier)") and (
         outputs and inputs
     ):
       try:
@@ -534,7 +920,7 @@ elif app_mode == "⚙️ كفاءة الأداء المتقدمة (DEA & Frontie
     st.info("👈 يرجى رفع ملف البيانات أولاً.")
 
 # =========================================================
-# 6. دراسة الجدوى الاقتصادية والمالية الموسعة
+# 10. دراسة الجدوى الاقتصادية والمالية الموسعة
 # =========================================================
 elif app_mode == "💰 دراسة الجدوى الاقتصادية والمالية الموسعة":
   st.subheader(
