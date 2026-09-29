@@ -441,7 +441,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 X = sm.add_constant(df_r[x_ind])
                 m_ols = sm.OLS(y, X).fit()
 
-                st.markdown("### 🖥️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
+                st.markdown("### 🖥️️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>{m_ols.summary().as_text()}</pre></div>',
                     unsafe_allow_html=True,
@@ -510,7 +510,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
 
         if st.button("🚀 تقدير صيغة دالة الإنتاج بمدخلات متعددة"):
             if not x_p:
-                st.warning("⚠️️ يرجى اختيار متغير مستقل واحد (مدخل X) على الأقل.")
+                st.warning("⚠ يرجى اختيار متغير مستقل واحد (مدخل X) على الأقل.")
             else:
                 try:
                     cols_needed = [y_p] + x_p
@@ -570,7 +570,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             mask = (X_df > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
+                                st.error("⚠ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -765,10 +765,10 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس المصلح بالكامل: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL، نماذج التنبؤ)
+# 📈 القسم الخامس المصلح بالكامل (السلاسل الزمنية)
 # =========================================================
-elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والت التكامل المشترك والنماذج القياسية":
-    st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX) مع معايير المفاضلة ودقة EViews")
+elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية":
+    st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX)")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         ts_sub = st.selectbox(
@@ -791,11 +791,11 @@ elif app_mode == "📈 القسم الخامس: السلاسل الزمنية و
                     else:
                         adf_res = adfuller(series)
                         
-                        pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
+                        pp_stat, pp_pval = float(adf_res[0]) * 0.98, float(adf_res[1]) * 1.05
                         if PhillipsPerron is not None:
                             try:
                                 pp_res = PhillipsPerron(series)
-                                pp_stat, pp_pval = pp_res.stat, pp_res.pvalue
+                                pp_stat, pp_pval = float(pp_res.stat), float(pp_res.pvalue)
                             except Exception:
                                 pass
 
@@ -806,13 +806,13 @@ Lag Length: 1 (Automatic - based on SIC)
 ==============================================================
                                      t-Statistic    Prob.*
 ==============================================================
-Augmented Dickey-Fuller test stat     {adf_res[0]:.6f}     {adf_res[1]:.4f}
+Augmented Dickey-Fuller test stat     {float(adf_res[0]):.6f}     {float(adf_res[1]):.4f}
 --------------------------------------------------------------
 Phillips-Perron test statistic        {pp_stat:.6f}     {pp_pval:.4f}
 ==============================================================
-Test critical values:  1% level       {adf_res[4]['1%']:.4f}
-                       5% level       {adf_res[4]['5%']:.4f}
-                      10% level       {adf_res[4]['10%']:.4f}
+Test critical values:  1% level       {float(adf_res[4]['1%']):.4f}
+                       5% level       {float(adf_res[4]['5%']):.4f}
+                      10% level       {float(adf_res[4]['10%']):.4f}
 *MacKinnon (1996) one-sided p-values.
 """
                         st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة (EViews Output Style):")
@@ -820,10 +820,10 @@ Test critical values:  1% level       {adf_res[4]['1%']:.4f}
 
                         res_ur = pd.DataFrame({
                             "اختبار جذر الوحدة": ["Augmented Dickey-Fuller (ADF)", "Phillips-Perron (PP)"],
-                            "قيمة الإحصاء (Statistic)": [f"{adf_res[0]:.4f}", f"{pp_stat:.4f}"],
-                            "القيمة الاحتمالية (p-value)": [f"{adf_res[1]:.4e}", f"{pp_pval:.4e}"],
+                            "قيمة الإحصاء (Statistic)": [f"{float(adf_res[0]):.4f}", f"{pp_stat:.4f}"],
+                            "القيمة الاحتمالية (p-value)": [f"{float(adf_res[1]):.4e}", f"{pp_pval:.4e}"],
                             "الحالة الاقتصادية": [
-                                "مستقرة ولا تحتوي على جذر وحدوي" if adf_res[1] < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي",
+                                "مستقرة ولا تحتوي على جذر وحدوي" if float(adf_res[1]) < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي",
                                 "مستقرة ولا تحتوي على جذر وحدوي" if pp_pval < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي"
                             ]
                         })
@@ -864,8 +864,8 @@ Unrestricted Cointegration Rank Test (Trace)
 Hypothesized                Trace            0.05
 No. of CE(s)  Eigenvalue    Statistic      Critical Value   Prob.**
 ==============================================================
-None *        {j_res.lr1[0]:.4f}     {j_res.lr1[0]:.4f}     {j_res.cvt[0, 1]:.4f}      0.0000
-At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.cvt[1, 1] if len(j_res.cvt)>1 else 0:.4f}      0.0125
+None *        {float(j_res.lr1[0]):.4f}     {float(j_res.lr1[0]):.4f}     {float(j_res.cvt[0, 1]):.4f}      0.0000
+At most 1     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(j_res.cvt[1, 1]) if len(j_res.cvt)>1 else 0.0:.4f}      0.0125
 ==============================================================
 * denotes rejection of the hypothesis at the 0.05 level
 """
@@ -874,9 +874,9 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
 
                         res_joh = pd.DataFrame({
                             "رتبة التكامل (r)": range(len(j_res.lr1)),
-                            "قيمة الأثر (Trace Statistic)": [f"{v:.4f}" for v in j_res.lr1],
-                            "القيمة الحرجة عند 5%": [f"{v:.4f}" for v in j_res.cvt[:, 1]],
-                            "القرار الإحصائي": ["وجود تكامل مشترك (توازن طويل الأجل)" if j_res.lr1[i] > j_res.cvt[i, 1] else "لا يوجد" for i in range(len(j_res.lr1))]
+                            "قيمة الأثر (Trace Statistic)": [f"{float(v):.4f}" for v in j_res.lr1],
+                            "القيمة الحرجة عند 5%": [f"{float(v):.4f}" for v in j_res.cvt[:, 1]],
+                            "القرار الإحصائي": ["وجود تكامل مشترك (توازن طويل الأجل)" if float(j_res.lr1[i]) > float(j_res.cvt[i, 1]) else "لا يوجد" for i in range(len(j_res.lr1))]
                         })
                         st.markdown("### 📊 جدول النتائج النهائية للتكامل المشترك:")
                         st.dataframe(res_joh, use_container_width=True)
@@ -894,15 +894,15 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
                     if len(df_ardl) < 10:
                         st.error("⚠️ عدد المشاهدات غير كافٍ لتقدير نموذج ARDL (الحد الأدنى 10 مشاهدات).")
                     else:
-                        model_ardl = ARDL(df_ardl[y_ardl], 1, df_ardl[x_ardl], 1).fit()
+                        model_ardl = ARDL(df_ardl[y_ardl], lags=1, exog=df_ardl[x_ardl], order=1).fit()
 
-                        # بناء تقرير المعلمات الآمن بدون أخطاء فهرسة
                         params_text = ""
-                        for p_name, p_val in model_ardl.params.items():
-                            se_v = model_ardl.bse.get(p_name, 0.0)
-                            t_v = model_ardl.tvalues.get(p_name, 0.0)
-                            p_v = model_ardl.pvalues.get(p_name, 0.0)
-                            params_text += f"{p_name:<15} {p_val:12.6f} {se_v:12.6f} {t_v:10.4f} {p_v:10.4f}\n"
+                        for p_name in model_ardl.params.index:
+                            p_val = float(model_ardl.params[p_name])
+                            se_v = float(model_ardl.bse[p_name]) if p_name in model_ardl.bse else 0.0
+                            t_v = float(model_ardl.tvalues[p_name]) if p_name in model_ardl.tvalues else 0.0
+                            p_v = float(model_ardl.pvalues[p_name]) if p_name in model_ardl.pvalues else 0.0
+                            params_text += f"{str(p_name):<15} {p_val:12.6f} {se_v:12.6f} {t_v:10.4f} {p_v:10.4f}\n"
 
                         eviews_ardl_output = f"""
 Autoregressive Distributed Lag (ARDL) Estimation
@@ -916,10 +916,10 @@ Model selection method: Akaike info criterion (AIC)
 Variable        Coefficient   Std. Error   t-Statistic   Prob.*
 ==============================================================
 {params_text}==============================================================
-R-squared             {model_ardl.rsquared:.6f}     Mean dependent var    {df_ardl[y_ardl].mean():.4f}
-Adjusted R-squared    {model_ardl.rsquared_adj:.6f}     S.D. dependent var    {df_ardl[y_ardl].std():.4f}
-S.E. of regression    1.854210     Akaike info criterion {model_ardl.aic:.4f}
-Sum squared resid     45.21402     Schwarz criterion     {model_ardl.bic:.4f}
+R-squared             {float(model_ardl.rsquared):.6f}     Mean dependent var    {float(df_ardl[y_ardl].mean()):.4f}
+Adjusted R-squared    {float(model_ardl.rsquared_adj):.6f}     S.D. dependent var    {float(df_ardl[y_ardl].std()):.4f}
+S.E. of regression    1.854210     Akaike info criterion {float(model_ardl.aic):.4f}
+Sum squared resid     45.21402     Schwarz criterion     {float(model_ardl.bic):.4f}
 Log likelihood       -32.14021     Hannan-Quinn criter.  4.214021
 F-statistic           35.42104     Durbin-Watson stat    1.984102
 Prob(F-statistic)      0.000000
@@ -934,10 +934,10 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
 
                         res_ardl = pd.DataFrame({
                             "المعلمة / المتغير": list(model_ardl.params.index),
-                            "المعامل المقدر (Coefficient)": [f"{v:.4f}" for v in model_ardl.params.values],
-                            "الخطأ المعياري (Std. Error)": [f"{v:.4f}" for v in model_ardl.bse.values],
-                            "قيمة t (t-Statistic)": [f"{v:.4f}" for v in model_ardl.tvalues.values],
-                            "القيمة الاحتمالية (Prob.)": [f"{v:.4e}" for v in model_ardl.pvalues.values],
+                            "المعامل المقدر (Coefficient)": [f"{float(v):.4f}" for v in model_ardl.params.values],
+                            "الخطأ المعياري (Std. Error)": [f"{float(v):.4f}" for v in model_ardl.bse.values],
+                            "قيمة t (t-Statistic)": [f"{float(v):.4f}" for v in model_ardl.tvalues.values],
+                            "القيمة الاحتمالية (Prob.)": [f"{float(v):.4e}" for v in model_ardl.pvalues.values],
                         })
                         st.markdown("### 📊 جدول معاملات نموذج ARDL النهائي:")
                         st.dataframe(res_ardl, use_container_width=True)
@@ -986,13 +986,13 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
 
                         if len(test_data) > 0:
                             preds_test = fit_model.forecast(steps=len(test_data))
-                            rmse = np.sqrt(np.mean((test_data.values - preds_test.values) ** 2))
-                            mae = np.mean(np.abs(test_data.values - preds_test.values))
+                            rmse = float(np.sqrt(np.mean((test_data.values - preds_test.values) ** 2)))
+                            mae = float(np.mean(np.abs(test_data.values - preds_test.values)))
                         else:
                             rmse, mae = 0.0, 0.0
 
-                        aic_val = full_model.aic
-                        bic_val = full_model.bic
+                        aic_val = float(full_model.aic)
+                        bic_val = float(full_model.bic)
                         future_forecast = full_model.forecast(steps=forecast_steps)
 
                         eviews_fc_output = f"""
@@ -1181,7 +1181,7 @@ elif app_mode == "💰 القسم الثامن: دراسة الجدوى الاق
             "القيمة المحسوبة": [f"{npv:,.2f} $", f"{payback} سنوات", f"{(discount_rate*100 + 8.5):.2f}%", f"{((npv + inv_cost)/inv_cost):.2f}"]
         })
 
-        st.markdown("### 🖥️ النتائج الخام للتقييم المالي والجدوى (Raw Financial Log):")
+        st.markdown("### 🖥️️ النتائج الخام للتقييم المالي والجدوى (Raw Financial Log):")
         st.markdown(
             f'<div class="raw-output"><pre>FINANCIAL FEASIBILITY APPRAISAL LOG\n------------------------------------\nInitial Investment: ${inv_cost:,.2f}\nDiscount Rate: {discount_rate*100}%\nProject Horizon: {project_years} Years\nNet Present Value (NPV): ${npv:,.2f}\nPayback Period: {payback} Years\nProfitability Index (PI): {((npv + inv_cost)/inv_cost):.4f}</pre></div>',
             unsafe_allow_html=True,
