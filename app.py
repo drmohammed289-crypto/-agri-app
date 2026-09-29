@@ -88,26 +88,26 @@ if data_option == "رفع ملف بيانات (Excel / CSV)":
 
 elif data_option == "الإدخال اليدوي المباشر وتوليد بيانات تجريبية":
   if st.sidebar.button("توليد مجموعة بيانات بحثية شاملة"):
-    np.random.seed(103)
+    np.random.seed(104)
     yr = np.arange(2000, 2024)
     df = pd.DataFrame({
         "السنوات": yr,
-        "الإنتاج_المحلي": np.linspace(100, 280, 24)
+        "الإنتاج_المحلي": np.linspace(100, 290, 24)
         + np.random.normal(0, 4, 24),
-        "الاستهلاك_الكلي": np.linspace(110, 300, 24)
+        "الاستهلاك_الكلي": np.linspace(110, 310, 24)
         + np.random.normal(0, 5, 24),
-        "الواردات": np.linspace(20, 75, 24) + np.random.normal(0, 3, 24),
-        "الصادرات": np.linspace(10, 45, 24) + np.random.normal(0, 2, 24),
-        "المخزون_الاستراتيجي": np.linspace(15, 60, 24)
+        "الواردات": np.linspace(20, 80, 24) + np.random.normal(0, 3, 24),
+        "الصادرات": np.linspace(10, 50, 24) + np.random.normal(0, 2, 24),
+        "المخزون_الاستراتيجي": np.linspace(15, 65, 24)
         + np.random.normal(0, 2, 24),
-        "التكاليف_الكلية": np.linspace(80, 230, 24)
+        "التكاليف_الكلية": np.linspace(80, 240, 24)
         + np.random.normal(0, 4, 24),
-        "الإيرادات": np.linspace(130, 380, 24) + np.random.normal(0, 6, 24),
-        "السعر_المزرعي": np.linspace(10, 48, 24) + np.random.normal(0, 2, 24),
-        "سعر_الجملة": np.linspace(15, 62, 24) + np.random.normal(0, 2.5, 24),
-        "سعر_التجزئة": np.linspace(22, 85, 24) + np.random.normal(0, 3, 24),
-        "رأس_المال_K": np.linspace(50, 180, 24) + np.random.normal(0, 4, 24),
-        "العمالة_L": np.linspace(40, 105, 24) + np.random.normal(0, 3, 24),
+        "الإيرادات": np.linspace(130, 400, 24) + np.random.normal(0, 6, 24),
+        "السعر_المزرعي": np.linspace(10, 50, 24) + np.random.normal(0, 2, 24),
+        "سعر_الجملة": np.linspace(15, 65, 24) + np.random.normal(0, 2.5, 24),
+        "سعر_التجزئة": np.linspace(22, 90, 24) + np.random.normal(0, 3, 24),
+        "رأس_المال_K": np.linspace(50, 190, 24) + np.random.normal(0, 4, 24),
+        "العمالة_L": np.linspace(40, 110, 24) + np.random.normal(0, 3, 24),
     })
     st.sidebar.success("✅ تم توليد البيانات بنجاح!")
 else:
@@ -129,7 +129,7 @@ app_mode = st.sidebar.selectbox(
     [
         "📁 معاينة البيانات والتحليل الوصفي",
         "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق والانحدار",
-        "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ)",
+        "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)",
         "⚙️ القسم الثالث: نموذج كفاءة بغلاف البيانات (DEA المنفصل)",
         "📐 القسم الرابع: تحليل الحدود العشوائية (Frontier SFA المنفصل والمصلح)",
         "📈 القسم الخامس: السلاسل الزمنية والنماذج القياسية والتنبؤ",
@@ -475,14 +475,14 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
         )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ)
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ وبمدخلات متعددة)
 # =========================================================
-elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ)":
-  st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية القياسية")
+elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ وبمدخلات متعددة)":
+  st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة (Inputs - X)")
   st.markdown(
-      "اختر الصيغة الرياضية المناسبة (كوب-دوجلاس، الخطية، الأسية، التربيعية،"
-      " العكسية، أو اللوغاريتمية الخطية) للحصول على النتائج الخام، إحصاءات t"
-      " و p-value، والرسوم."
+      "اختر الصيغة الرياضية لدالة الإنتاج وحدد **مدخلات متعددة** (مثل عناصر"
+      " الإنتاج: رأس المال، العمالة، المستلزمات...) للحصول على النتائج الخام،"
+      " معاملات المرونة، إحصاءات t، و p-value."
   )
 
   if df is not None:
@@ -491,117 +491,148 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
         "اختر صيغة دالة الإنتاج:",
         [
             "كوب-دوجلاس (Cobb-Douglas / Log-Log)",
-            "الخطية (Linear: Y = a + bX)",
-            "الأسية (Exponential: lnY = a + bX)",
+            "الخطية (Linear: Y = a + b1X1 + b2X2...)",
+            "الأسية (Exponential: lnY = a + b1X1 + b2X2...)",
             "التربيعية (Quadratic: Y = a + bX + cX²)",
-            "العكسية (Inverse / Reciprocal: Y = a + b(1/X))",
-            "اللوغاريتمية الخطية (Log-Linear: Y = a + b(lnX))",
+            "اللوغاريتمية الخطية (Log-Linear: Y = a + b1(lnX1)...)",
         ],
     )
 
     y_p = st.selectbox("متغير الإنتاج التابع (Y):", num_cols, key="yp_all")
-    x_p = st.selectbox(
-        "متغير المدخلات المستقل (X):",
+    x_p = st.multiselect(
+        "اختر المدخلات المستقلة (Inputs - X):",
         [c for c in num_cols if c != y_p],
-        key="xp_all",
+        key="xp_all_multi",
     )
 
-    if st.button("🚀 تقدير صيغة دالة الإنتاج المختارة"):
+    if st.button("🚀 تقدير صيغة دالة الإنتاج بمدخلات متعددة") and x_p:
       try:
         df_prod = (
-            df[[y_p, x_p]].apply(pd.to_numeric, errors="coerce").dropna()
+            df[[y_p] + x_p].apply(pd.to_numeric, errors="coerce").dropna()
         )
-        df_prod = df_prod[(df_prod > 0).all(axis=1)]  # تنقيم للوغاريتمات
+        df_prod = df_prod[(df_prod > 0).all(axis=1)]  # تنقية للوغاريتمات
 
-        y_vals = df_prod[y_p].values
-        x_vals = df_prod[x_p].values
-
-        if "كوب-دوجلاس" in prod_form:
-          dep_v = np.log(y_vals)
-          ind_v = sm.add_constant(np.log(x_vals))
-          eq_name = "Cobb-Douglas: ln(Y) = a + b*ln(X)"
-        elif "الخطية" in prod_form:
-          dep_v = y_vals
-          ind_v = sm.add_constant(x_vals)
-          eq_name = "Linear: Y = a + b*X"
-        elif "الأسية" in prod_form:
-          dep_v = np.log(y_vals)
-          ind_v = sm.add_constant(x_vals)
-          eq_name = "Exponential: ln(Y) = a + b*X"
-        elif "التربيعية" in prod_form:
-          dep_v = y_vals
-          ind_v = sm.add_constant(np.column_stack((x_vals, x_vals**2)))
-          eq_name = "Quadratic: Y = a + b*X + c*X²"
-        elif "العكسية" in prod_form:
-          dep_v = y_vals
-          ind_v = sm.add_constant(1.0 / x_vals)
-          eq_name = "Inverse: Y = a + b*(1/X)"
+        if len(df_prod) < 3:
+          st.error(
+              "البيانات غير كافية أو تحتوي على قيم صفرية/سالبة لا تناسب"
+              " اللوغاريتمات."
+          )
         else:
-          dep_v = y_vals
-          ind_v = sm.add_constant(np.log(x_vals))
-          eq_name = "Log-Linear: Y = a + b*ln(X)"
+          y_vals = df_prod[y_p].values
+          X_vals = df_prod[x_p].values
 
-        m_prod = sm.OLS(dep_v, ind_v).fit()
+          if "كوب-دوجلاس" in prod_form:
+            dep_v = np.log(y_vals)
+            ind_v = sm.add_constant(np.log(X_vals))
+            eq_name = "Cobb-Douglas (Multi-Input): ln(Y) = a + Σ bi*ln(Xi)"
+          elif "الخطية" in prod_form:
+            dep_v = y_vals
+            ind_v = sm.add_constant(X_vals)
+            eq_name = "Linear (Multi-Input): Y = a + Σ bi*Xi"
+          elif "الأسية" in prod_form:
+            dep_v = np.log(y_vals)
+            ind_v = sm.add_constant(X_vals)
+            eq_name = "Exponential (Multi-Input): ln(Y) = a + Σ bi*Xi"
+          elif "التربيعية" in prod_form:
+            dep_v = y_vals
+            # إضافة الحدود التربيعية للمدخلات الأولية
+            X_quad = np.column_stack(
+                (X_vals, X_vals**2)
+            )  # أخذ المربع للمدخل الأول للتسهيل القياسي
+            ind_v = sm.add_constant(X_quad)
+            eq_name = "Quadratic: Y = a + b*X + c*X²"
+          else:  # Log-Linear
+            dep_v = y_vals
+            ind_v = sm.add_constant(np.log(X_vals))
+            eq_name = "Log-Linear: Y = a + b*ln(X)"
 
-        st.markdown(
-            f"### 🖥️ النتائج الخام لدالة الإنتاج ({prod_form}) (Raw Output):"
-        )
-        st.markdown(
-            f'<div class="raw-output"><pre>{m_prod.summary().as_text()}</pre></div>',
-            unsafe_allow_html=True,
-        )
+          m_prod = sm.OLS(dep_v, ind_v).fit()
 
-        res_p_df = pd.DataFrame({
-            "المعلمة": m_prod.params.index,
-            "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params.values],
-            "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse.values],
-            "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues.values],
-            "القيمة الاحتمالية (p-value)": [
-                f"{v:.4e}" for v in m_prod.pvalues.values
-            ],
-        })
+          # تصحيح أسماء المعلمات في الجدول لتعكس أسماء المتغيرات المختارة بدقة
+          param_names = ["Intercept"]
+          if "كوب-دوجلاس" in prod_form or "اللوغاريتمية الخطية" in prod_form:
+            param_names += [f"ln({col})" for col in x_p]
+          elif "التربيعية" in prod_form:
+            param_names += [f"{col}" for col in x_p] + [f"{col}²" for col in x_p]
+          else:
+            param_names += [f"{col}" for col in x_p]
 
-        st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
-        st.dataframe(res_p_df, use_container_width=True)
-        st.info(
-            f"مؤشرات جودة المطابقة: R² = {m_prod.rsquared:.4f} | Adjusted R² ="
-            f" {m_prod.rsquared_adj:.4f} | F-stat = {m_prod.fvalue:.4f} (p ="
-            f" {m_prod.f_pvalue:.4e})"
-        )
-        st.download_button(
-            "📥 تحميل نتائج الدالة (Excel)",
-            convert_df_to_excel(res_p_df),
-            "production_function_results.xlsx",
-        )
+          st.markdown(
+              f"### 🖥️ النتائج الخام لدالة الإنتاج ({prod_form}) (Raw Output):"
+          )
+          st.markdown(
+              f'<div class="raw-output"><pre>{m_prod.summary().as_text()}</pre></div>',
+              unsafe_allow_html=True,
+          )
 
-        fig, ax = plt.subplots(figsize=(9, 4))
-        ax.scatter(x_vals, y_vals, color="#1b5e20", label="Actual Data", alpha=0.7)
-        sort_idx = np.argsort(x_vals)
-        ax.plot(
-            x_vals[sort_idx],
-            m_prod.fittedvalues[sort_idx]
-            if "كوب-دوجلاس" not in prod_form and "الأسية" not in prod_form
-            else np.exp(m_prod.fittedvalues[sort_idx]),
-            color="red",
-            lw=2,
-            label="Estimated Function",
-        )
-        ax.set_xlabel(f"Input ({x_p})")
-        ax.set_ylabel(f"Output ({y_p})")
-        ax.set_title(f"Production Function Form: {eq_name}")
-        ax.legend()
-        st.pyplot(fig)
+          res_p_df = pd.DataFrame({
+              "المعلمة": param_names[: len(m_prod.params)],
+              "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params.values],
+              "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse.values],
+              "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues.values],
+              "القيمة الاحتمالية (p-value)": [
+                  f"{v:.4e}" for v in m_prod.pvalues.values
+              ],
+          })
 
-        st.markdown(
-            academic_report_template(
-                f"تقدير دالة الإنتاج بصیغة ({prod_form})",
-                f"تم تقدير دالة الإنتاج وفق الصيغة ({eq_name}) بنجاح، حيث بلغ"
-                f" معامل التحديد R² نحو {m_prod.rsquared:.4f} مع معنوية إحصائية"
-                " واضحة للمعلمات المقدرة تتفق مع النظرية الاقتصادية وغلة"
-                " الإنتاج.",
-            ),
-            unsafe_allow_html=True,
-        )
+          st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
+          st.dataframe(res_p_df, use_container_width=True)
+
+          if "كوب-دوجلاس" in prod_form:
+            sum_elast = sum(m_prod.params.values[1:])
+            st.info(
+                f"🌟 مجموع المرونات (عوائد السعة / Returns to Scale):"
+                f" {sum_elast:.4f} -> {'عوائد سعة متزايدة (IRS)' if sum_elast > 1 else ('عوائد سعة ثابتة (CRS)' if abs(sum_elast-1)<0.05 else 'عوائد سعة متناقصة (DRS)')}"
+            )
+
+          st.info(
+              f"مؤشرات جودة المطابقة: R² = {m_prod.rsquared:.4f} | Adjusted R² ="
+              f" {m_prod.rsquared_adj:.4f} | F-stat = {m_prod.fvalue:.4f} (p ="
+              f" {m_prod.f_pvalue:.4e})"
+          )
+          st.download_button(
+              "📥 تحميل نتائج الدالة (Excel)",
+              convert_df_to_excel(res_p_df),
+              "production_function_results.xlsx",
+          )
+
+          fig, ax = plt.subplots(figsize=(9, 4))
+          ax.scatter(
+              X_vals[:, 0],
+              y_vals,
+              color="#1b5e20",
+              label="Actual Data (Input 1)",
+              alpha=0.7,
+          )
+          sort_idx = np.argsort(X_vals[:, 0])
+          fitted_plot = (
+              m_prod.fittedvalues
+              if "كوب-دوجلاس" not in prod_form and "الأسية" not in prod_form
+              else np.exp(m_prod.fittedvalues)
+          )
+          ax.plot(
+              X_vals[sort_idx, 0],
+              fitted_plot[sort_idx],
+              color="red",
+              lw=2,
+              label="Estimated Function",
+          )
+          ax.set_xlabel(f"Input 1 ({x_p[0]})")
+          ax.set_ylabel(f"Output ({y_p})")
+          ax.set_title(f"Production Function Form: {eq_name}")
+          ax.legend()
+          st.pyplot(fig)
+
+          st.markdown(
+              academic_report_template(
+                  f"تقدير دالة الإنتاج بصیغة ({prod_form}) بمدخلات متعددة",
+                  f"تم تقدير دالة الإنتاج وفق الصيغة ({eq_name}) باستخدام المدخلات"
+                  f" المختارة بنجاح، حيث بلغ معامل التحديد R² نحو"
+                  f" {m_prod.rsquared:.4f} مع معنوية إحصائية عالية للمعلمات"
+                  " المقدرة.",
+              ),
+              unsafe_allow_html=True,
+          )
       except Exception as e:
         st.error(f"خطأ في تقدير الدالة: {e}")
   else:
@@ -620,8 +651,8 @@ elif app_mode == "⚙️ القسم الثالث: نموذج كفاءة بغلا
   if df is not None:
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     dmu_col = st.selectbox("عمود الوحدات الإنتاجية (DMU / الشركات / المزارع):", df.columns)
-    inputs_dea = st.multiselect("اختر المدخلات المستخدمة (Inputs - X):", num_cols, default=num_cols[:2])
-    outputs_dea = st.multiselect("اختر المخرجات المستهدفة (Outputs - Y):", num_cols, default=num_cols[2:3])
+    inputs_dea = st.multiselect("اختر المدخلات المستخدمة (Inputs - X):", num_cols, default=num_cols[:2] if len(num_cols)>=2 else [])
+    outputs_dea = st.multiselect("اختر المخرجات المستهدفة (Outputs - Y):", num_cols, default=[num_cols[2]] if len(num_cols)>=3 else [])
 
     st.markdown("### 💲 إدخال الأسعار (لحساب الكفاءة التوزيعية والاقتصادية):")
     col_p1, col_p2 = st.columns(2)
@@ -704,7 +735,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     dmu_sfa = st.selectbox("عمود الوحدات (DMU):", df.columns, key="dsfa")
     y_sfa = st.selectbox("المخرج المستهدف (Output - Y):", num_cols, key="ysfa")
-    x_sfa = st.multiselect("المدخلات (Inputs - X):", [c for c in num_cols if c != y_sfa], default=num_cols[:2])
+    x_sfa = st.multiselect("المدخلات (Inputs - X):", [c for c in num_cols if c != y_sfa], default=[])
 
     if st.button("🚀 تقدير دالة الإنتاج واستخراج كفاءات Frontier SFA") and x_sfa:
       try:
