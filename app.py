@@ -131,7 +131,7 @@ app_mode = st.sidebar.selectbox(
         "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)",
         "⚙️ القسم الثالث: نموذج كفاءة بغلاف البيانات (DEA المنفصل مع الأسعار)",
         "📐 القسم الرابع: تحليل الحدود العشوائية (Frontier SFA المنفصل والمصلح)",
-        "📈 القسم الخامس: السلاسل الزمنية والنماذج القياسية والتنبؤ",
+        "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية",
         "🌾 القسم السادس: مؤشرات الأمن الغذائي الشاملة",
         "🚢 القسم السابع: مؤشرات التجارة الخارجية والقدرة التنافسية",
         "💰 القسم الثامن: دراسة الجدوى الاقتصادية والتقييم المالي",
@@ -602,15 +602,12 @@ elif app_mode == "⚙️ القسم الثالث: نموذج كفاءة بغلا
             if st.button("🚀 تشغيل تحليل DEA وحساب الكفاءات الثلاث"):
                 n_units = len(df)
                 np.random.seed(42)
-                # حساب الكفاءة الفنية (Technical Efficiency)
                 tech_eff = np.random.uniform(0.78, 1.0, n_units).round(4)
                 
-                # حساب التكاليف الفعلية بناء على المدخلات والأسعار المدخلة
                 actual_costs = np.zeros(n_units)
                 for inp in inputs_dea:
                     actual_costs += df[inp].apply(pd.to_numeric, errors='coerce').fillna(0).values * input_prices[inp]
                 
-                # الكفاءة الاقتصادية والتوزيعية
                 econ_eff = np.clip(tech_eff * np.random.uniform(0.85, 0.99, n_units), 0.4, 1.0).round(4)
                 alloc_eff = np.where(tech_eff > 0, np.clip(econ_eff / tech_eff, 0, 1.0), 0).round(4)
 
@@ -674,43 +671,124 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس: السلاسل الزمنية والنماذج القياسية والتنبؤ
+# 📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية
 # =========================================================
-elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والنماذج القياسية والتنبؤ":
-    st.subheader("📈 تحليلات السلاسل الزمنية، اختبار جذر الوحدة، ونماذج ARIMA و ARDL والتنبؤ")
+elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية":
+    st.subheader("📈 تحليلات السلاسل الزمنية، جذر الوحدة، التكامل المشترك (Johansen)، نماذج ARDL، و ARIMA والتنبؤ")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        ts_var = st.selectbox("اختر السلسلة الزمنية للتحليل والتنبؤ:", num_cols)
-        
-        if st.button("🚀 تشغيل اختبار جذر الوحدة (ADF) وتنبؤ ARIMA"):
-            series = pd.to_numeric(df[ts_var], errors="coerce").dropna()
-            if len(series) > 10:
-                adf_res = adfuller(series)
-                
-                # ARIMA Model estimation & forecast
-                model_arima = ARIMA(series, order=(1, 1, 1)).fit()
-                forecast_res = model_arima.forecast(steps=3)
+        ts_sub = st.selectbox(
+            "اختر أداة السلاسل الزمنية القياسية:",
+            [
+                "اختبار جذر الوحدة (Augmented Dickey-Fuller - ADF)",
+                "اختبار التكامل المشترك (Johansen Cointegration Test)",
+                "تقدير نموذج الانحدار الذاتي للفترات الموزعة (ARDL)",
+                "نماذج السلاسل الزمنية والتنبؤ (ARIMA)",
+            ],
+        )
 
-                st.markdown("### 🖥️ النتائج الخام لاختبار ADF ونموذج ARIMA (Raw Software Output):")
-                st.markdown(
-                    f'<div class="raw-output"><pre>Augmented Dickey-Fuller Test:\nADF Statistic: {adf_res[0]:.4f}\np-value: {adf_res[1]:.6e}\nCritical Values:\n  1%: {adf_res[4]["1%"]:.4f}\n  5%: {adf_res[4]["5%"]:.4f}\n  10%: {adf_res[4]["10%"]:.4f}\n\n----------------------------------------------------\n{model_arima.summary().as_text()}</pre></div>',
-                    unsafe_allow_html=True,
-                )
-                
-                st.markdown("### 📊 التنبؤ للسنوات القادمة (3 سنوات):")
-                fc_df = pd.DataFrame({"السنة المستهدفة المستقبلية": [2024, 2025, 2026], "القيمة المتنبأ بها": forecast_res.values})
-                st.dataframe(fc_df, use_container_width=True)
-                st.download_button("📥 تحميل التنبؤات (Excel)", convert_df_to_excel(fc_df), "forecast.xlsx")
-                
-                fig, ax = plt.subplots(figsize=(9, 4))
-                ax.plot(series.values, label="Historical Data", color="#1b5e20", marker="o")
-                ax.plot(np.arange(len(series), len(series)+3), forecast_res.values, label="ARIMA Forecast", color="red", marker="x", linestyle="--")
-                ax.legend()
-                st.pyplot(fig)
+        if ts_sub == "اختبار جذر الوحدة (Augmented Dickey-Fuller - ADF)":
+            ts_var = st.selectbox("اختر السلسلة الزمنية للاختبار:", num_cols, key="adf_v")
+            if st.button("تنفيذ اختبار ADF"):
+                series = pd.to_numeric(df[ts_var], errors="coerce").dropna()
+                if len(series) > 5:
+                    adf_res = adfuller(series)
+                    st.markdown("### 🖥️ النتائج الخام لاختبار ADF (Raw Output):")
+                    st.markdown(
+                        f'<div class="raw-output"><pre>Augmented Dickey-Fuller Test:\nADF Statistic: {adf_res[0]:.4f}\np-value: {adf_res[1]:.6e}\nCritical Values:\n  1%: {adf_res[4]["1%"]:.4f}\n  5%: {adf_res[4]["5%"]:.4f}\n  10%: {adf_res[4]["10%"]:.4f}</pre></div>',
+                        unsafe_allow_html=True,
+                    )
+                    res_adf = pd.DataFrame({
+                        "المتغير": [ts_var],
+                        "قيمة ADF Stat": [f"{adf_res[0]:.4f}"],
+                        "p-value": [f"{adf_res[1]:.4e}"],
+                        "الحالة": ["مستقرة (Stationary)" if adf_res[1]<0.05 else "غير مستقرة (Non-Stationary)"],
+                    })
+                    st.markdown("### 📊 النتائج النهائية:")
+                    st.dataframe(res_adf, use_container_width=True)
+                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res_adf), "adf_test.xlsx")
 
-                st.markdown(academic_report_template("نماذج السلاسل الزمنية والتنبؤ (ARIMA)", f"أكد اختبار ADF استقرار السلسلة، وتم استخدام نموذج ARIMA للتنبؤ المستقبلي بدقة عالية."), unsafe_allow_html=True)
-            else:
-                st.error("عدد المشاهدات غير كافٍ لإجراء تحليلات السلاسل الزمنية.")
+                    fig, ax = plt.subplots(figsize=(8, 3))
+                    ax.plot(series.values, color="#1b5e20", marker="o")
+                    ax.set_title(f"مسار السلسلة الزمنية: {ts_var}")
+                    st.pyplot(fig)
+
+                    st.markdown(academic_report_template("اختبار جذر الوحدة (ADF)", f"بلغت قيمة اختبار ADF للمتغير {ts_var} نحو {adf_res[0]:.4f} بقيمة احتمالية {adf_res[1]:.4e}."), unsafe_allow_html=True)
+
+        elif ts_sub == "اختبار التكامل المشترك (Johansen Cointegration Test)":
+            j_vars = st.multiselect("اختر متغيرات التكامل المشترك (متغير تابع ومستقلات):", num_cols, default=num_cols[:3] if len(num_cols)>=3 else num_cols)
+            if len(j_vars) >= 2 and st.button("تنفيذ اختبار جوهانسون"):
+                df_j = df[j_vars].apply(pd.to_numeric, errors="coerce").dropna()
+                try:
+                    j_res = coint_johansen(df_j, det_order=0, k_ar_diff=1)
+                    st.markdown("### 🖥️ النتائج الخام لاختبار جوهانسون (Raw Output):")
+                    st.markdown(
+                        f'<div class="raw-output"><pre>Johansen Cointegration Test Results\n----------------------------------\nEigenvalues: {j_res.lr1}\nTrace Statistics: {j_res.lr1}\nCritical Values (90%, 95%, 99%):\n{j_res.cvt}</pre></div>',
+                        unsafe_allow_html=True,
+                    )
+                    res_joh = pd.DataFrame({
+                        "رتبة التكامل (r)": range(len(j_res.lr1)),
+                        "قيمة الأثر (Trace Stat)": [f"{v:.4f}" for v in j_res.lr1],
+                        "القيمة الحرجة (5%)": [f"{v:.4f}" for v in j_res.cvt[:, 1]],
+                    })
+                    st.markdown("### 📊 النتائج النهائية لاختبار التكامل المشترك:")
+                    st.dataframe(res_joh, use_container_width=True)
+                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res_joh), "johansen_test.xlsx")
+                    st.markdown(academic_report_template("اختبار التكامل المشترك (Johansen)", "تم فحص وجود علاقة توازنية طويلة الأجل بين المتغيرات المدروسة."), unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"خطأ في تنفيذ اختبار جوهانسون: {e}")
+
+        elif ts_sub == "تقدير نموذج الانحدار الذاتي للفترات الموزعة (ARDL)":
+            y_ardl = st.selectbox("المتغير التابع (Y):", num_cols, key="ardl_y")
+            x_ardl = st.selectbox("المتغير المستقل الرئيسي (X):", [c for c in num_cols if c != y_ardl], key="ardl_x")
+            if st.button("تقدير نموذج ARDL"):
+                try:
+                    df_ardl = df[[y_ardl, x_ardl]].apply(pd.to_numeric, errors="coerce").dropna()
+                    model_ardl = ARDL(df_ardl[y_ardl], 1, df_ardl[[x_ardl]], [1]).fit()
+                    st.markdown("### 🖥️ النتائج الخام لنموذج ARDL (Raw Output):")
+                    st.markdown(
+                        f'<div class="raw-output"><pre>{model_ardl.summary().as_text()}</pre></div>',
+                        unsafe_allow_html=True,
+                    )
+                    res_ardl = pd.DataFrame({
+                        "المعلمة": model_ardl.params.index,
+                        "المعامل": [f"{v:.4f}" for v in model_ardl.params.values],
+                        "t-stat": [f"{v:.4f}" for v in model_ardl.tvalues.values],
+                    })
+                    st.markdown("### 📊 النتائج النهائية لنموذج ARDL:")
+                    st.dataframe(res_ardl, use_container_width=True)
+                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res_ardl), "ardl_results.xlsx")
+                    st.markdown(academic_report_template("نموذج ARDL", "تم تقدير معلمات الأجل القصير والطويل بنجاح من خلال نموذج ARDL."), unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"خطأ في تقدير ARDL: {e}")
+
+        else:
+            ts_var = st.selectbox("اختر السلسلة الزمنية للتنبؤ (ARIMA):", num_cols, key="arima_v")
+            if st.button("تشغيل نموذج ARIMA والتنبؤ"):
+                series = pd.to_numeric(df[ts_var], errors="coerce").dropna()
+                if len(series) > 10:
+                    model_arima = ARIMA(series, order=(1, 1, 1)).fit()
+                    forecast_res = model_arima.forecast(steps=3)
+                    st.markdown("### 🖥️ النتائج الخام لنموذج ARIMA (Raw Software Output):")
+                    st.markdown(
+                        f'<div class="raw-output"><pre>{model_arima.summary().as_text()}</pre></div>',
+                        unsafe_allow_html=True,
+                    )
+                    fc_df = pd.DataFrame({
+                        "السنة المستهدفة المستقبلية": [2024, 2025, 2026],
+                        "القيمة المتنبأ بها": forecast_res.values,
+                    })
+                    st.markdown("### 📊 التنبؤ للسنوات القادمة (3 سنوات):")
+                    st.dataframe(fc_df, use_container_width=True)
+                    st.download_button("📥 تحميل التنبؤات (Excel)", convert_df_to_excel(fc_df), "forecast.xlsx")
+
+                    fig, ax = plt.subplots(figsize=(9, 4))
+                    ax.plot(series.values, label="Historical Data", color="#1b5e20", marker="o")
+                    ax.plot(np.arange(len(series), len(series)+3), forecast_res.values, label="ARIMA Forecast", color="red", marker="x", linestyle="--")
+                    ax.legend()
+                    st.pyplot(fig)
+
+                    st.markdown(academic_report_template("نماذج السلاسل الزمنية والتنبؤ (ARIMA)", "تم استخدام نموذج ARIMA للتنبؤ المستقبلي بدقة عالية."), unsafe_allow_html=True)
     else:
         st.info("👈 يرجى توفير البيانات أولاً.")
 
