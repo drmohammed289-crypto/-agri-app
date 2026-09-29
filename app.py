@@ -477,7 +477,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المعدل والمصحح)
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المصحح جذرياً ليعمل بكفاءة)
 # =========================================================
 elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ وبمدخلات متعددة)":
     st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة")
@@ -504,69 +504,136 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
         if st.button("🚀 تقدير صيغة دالة الإنتاج بمدخلات متعددة") and x_p:
             try:
                 cols_needed = [y_p] + x_p
-                df_prod = df[cols_needed].apply(pd.to_numeric, errors="coerce").dropna()
-                
-                if "كوب-دوجلاس" in prod_form or "اللوغاريتمية الخطية" in prod_form or "الأسية" in prod_form:
+                df_prod = (
+                    df[cols_needed].apply(pd.to_numeric, errors="coerce").dropna()
+                )
+
+                # معالجة النموذج بناءً على القيود الرياضية لكل صيغة دالة إنتاج
+                if "كوب-دوجلاس" in prod_form:
                     df_prod = df_prod[(df_prod > 0).all(axis=1)]
-
-                if len(df_prod) < 3:
-                    st.error("⚠️ البيانات غير كافية أو تحتوي على قيم صفرية/سالبة لا تتناسب مع النماذج المختارة.")
-                else:
-                    y_vals = df_prod[y_p].values
-                    X_vals = df_prod[x_p].values
-
-                    if "كوب-دوجلاس" in prod_form:
+                    if len(df_prod) < 3:
+                        st.error(
+                            "⚠️ البيانات غير كافية أو تحتوي على قيم صفرية/سالبة لا تتناسب"
+                            " مع نموذج كوب-دوجلاس."
+                        )
+                    else:
+                        y_vals = df_prod[y_p].values
+                        X_vals = df_prod[x_p].values
                         dep_v = np.log(y_vals)
                         ind_v = sm.add_constant(np.log(X_vals))
                         param_names = ["Intercept"] + [f"ln({col})" for col in x_p]
-                    elif "الخطية" in prod_form:
+                        m_prod = sm.OLS(dep_v, ind_v).fit()
+
+                elif "الخطية" in prod_form:
+                    if len(df_prod) < 3:
+                        st.error("⚠️ البيانات غير كافية لتقدير النموذج الخطي.")
+                    else:
+                        y_vals = df_prod[y_p].values
+                        X_vals = df_prod[x_p].values
                         dep_v = y_vals
                         ind_v = sm.add_constant(X_vals)
                         param_names = ["Intercept"] + [str(col) for col in x_p]
-                    elif "الأسية" in prod_form:
+                        m_prod = sm.OLS(dep_v, ind_v).fit()
+
+                elif "الأسية" in prod_form:
+                    df_prod = df_prod[df_prod[y_p] > 0]
+                    if len(df_prod) < 3:
+                        st.error(
+                            "⚠️ متغير الإنتاج (Y) يجب أن يكون موجباً بالكامل لتقدير"
+                            " النموذج الأسي."
+                        )
+                    else:
+                        y_vals = df_prod[y_p].values
+                        X_vals = df_prod[x_p].values
                         dep_v = np.log(y_vals)
                         ind_v = sm.add_constant(X_vals)
                         param_names = ["Intercept"] + [str(col) for col in x_p]
-                    elif "التربيعية" in prod_form:
+                        m_prod = sm.OLS(dep_v, ind_v).fit()
+
+                elif "التربيعية" in prod_form:
+                    if len(df_prod) < 3:
+                        st.error("⚠️️ البيانات غير كافية لتقدير النموذج التربيعي.")
+                    else:
+                        y_vals = df_prod[y_p].values
+                        X_vals = df_prod[x_p].values
                         dep_v = y_vals
                         X_quad = np.column_stack((X_vals, X_vals**2))
                         ind_v = sm.add_constant(X_quad)
-                        param_names = ["Intercept"] + [str(col) for col in x_p] + [f"{col}²" for col in x_p]
+                        param_names = (
+                            ["Intercept"]
+                            + [str(col) for col in x_p]
+                            + [f"{col}²" for col in x_p]
+                        )
+                        m_prod = sm.OLS(dep_v, ind_v).fit()
+
+                else:  # اللوغاريتمية الخطية
+                    df_prod = df_prod[(df_prod[x_p] > 0).all(axis=1)]
+                    if len(df_prod) < 3:
+                        st.error(
+                            "⚠️ المدخلات المستقلة (X) يجب أن تكون موجبة بالكامل لتقدير"
+                            " النموذج اللوغاريتمي الخطي."
+                        )
                     else:
+                        y_vals = df_prod[y_p].values
+                        X_vals = df_prod[x_p].values
                         dep_v = y_vals
                         ind_v = sm.add_constant(np.log(X_vals))
                         param_names = ["Intercept"] + [f"ln({col})" for col in x_p]
+                        m_prod = sm.OLS(dep_v, ind_v).fit()
 
-                    m_prod = sm.OLS(dep_v, ind_v).fit()
-
-                    st.markdown(f"### 🖥️ النتائج الخام لدالة الإنتاج ({prod_form}) [Raw Software Output]:")
+                if len(df_prod) >= 3 and "m_prod" in locals():
+                    st.markdown(
+                        f"### 🖥️ النتائج الخام لدالة الإنتاج ({prod_form}) [Raw Software Output]:"
+                    )
                     st.markdown(
                         f'<div class="raw-output"><pre>{m_prod.summary().as_text()}</pre></div>',
                         unsafe_allow_html=True,
                     )
 
                     res_p_df = pd.DataFrame({
-                        "المعلمة": param_names[:len(m_prod.params)],
+                        "المعلمة": (
+                            param_names
+                            if len(param_names) == len(m_prod.params)
+                            else list(m_prod.params.index)
+                        ),
                         "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params],
                         "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse],
                         "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues],
-                        "القيمة الاحتمالية (p-value)": [f"{v:.4e}" for v in m_prod.pvalues],
+                        "القيمة الاحتمالية (p-value)": [
+                            f"{v:.4e}" for v in m_prod.pvalues
+                        ],
                     })
 
                     st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
                     st.dataframe(res_p_df, use_container_width=True)
 
                     if "كوب-دوجلاس" in prod_form:
-                        sum_elast = sum(m_prod.params[1:len(x_p)+1])
+                        sum_elast = sum(m_prod.params[1 : len(x_p) + 1])
                         st.info(
                             f"🌟 مجموع المرونات (عوائد السعة): {sum_elast:.4f} -> "
                             f"{'عوائد سعة متزايدة (IRS)' if sum_elast > 1 else ('عوائد سعة ثابتة (CRS)' if abs(sum_elast-1)<0.05 else 'عوائد سعة متناقصة (DRS)')}"
                         )
 
-                    st.info(f"مؤشرات جودة المطابقة: R² = {m_prod.rsquared:.4f} | Adjusted R² = {m_prod.rsquared_adj:.4f}")
-                    st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_p_df), "prod_results.xlsx")
+                    st.info(
+                        f"مؤشرات جودة المطابقة: R² = {m_prod.rsquared:.4f} | Adjusted"
+                        f" R² = {m_prod.rsquared_adj:.4f}"
+                    )
+                    st.download_button(
+                        "📥 تحميل النتائج (Excel)",
+                        convert_df_to_excel(res_p_df),
+                        "prod_results.xlsx",
+                    )
 
-                    st.markdown(academic_report_template(f"تقدير دالة الإنتاج ({prod_form})", f"تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ {m_prod.rsquared:.4f}."), unsafe_allow_html=True)
+                    st.markdown(
+                        academic_report_template(
+                            f"تقدير دالة الإنتاج ({prod_form})",
+                            (
+                                "تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ"
+                                f" {m_prod.rsquared:.4f}."
+                            ),
+                        ),
+                        unsafe_allow_html=True,
+                    )
             except Exception as e:
                 st.error(f"❌ حدث خطأ أثناء تقدير دالة الإنتاج: {e}")
     else:
@@ -613,7 +680,7 @@ elif app_mode == "⚙️ القسم الثالث: نموذج كفاءة بغلا
                     "عائد السعة (Returns to Scale)": np.random.choice(["ثابت (CRS)", "متزايد (IRS)", "متناقص (DRS)"], n_units),
                 })
 
-                st.markdown("### 🖥️ النتائج الخام لنموذج كفاءة DEA (Raw Solver & Cost Minimization Output):")
+                st.markdown("### 🖥️️ النتائج الخام لنموذج كفاءة DEA (Raw Solver & Cost Minimization Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>==============================================================\nDATA ENVELOPMENT ANALYSIS (DEA) - COST/ALLOCATIVE EFFICIENCY\n==============================================================\nOptimization Solver: Simplex / Linear Programming (Charnes-Cooper-Rhodes)\nNumber of DMUs Evaluated: {n_units}\nInputs Included: {inputs_dea}\nOutputs Included: {outputs_dea}\nInput Prices Used: {input_prices}\nOutput Unit Price: {output_price}\n--------------------------------------------------------------\nMean Technical Efficiency (TE): {tech_eff.mean():.4f}\nMean Allocative Efficiency (AE): {alloc_eff.mean():.4f}\nMean Economic/Cost Efficiency (EE): {econ_eff.mean():.4f}\nStatus: Optimal Solution Found for All DMUs\n==============================================================</pre></div>',
                     unsafe_allow_html=True,
