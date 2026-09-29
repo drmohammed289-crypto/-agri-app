@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from statsmodels.regression.recursive_ls import RecursiveLS
-from statsmodels.stats.diagnostic import acorr_ljungbox, jarque_bera
+from scipy.stats import jarque_bera
+from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.ardl import ARDL
 from statsmodels.tsa.stattools import adfuller
