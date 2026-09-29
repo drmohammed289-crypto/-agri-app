@@ -160,7 +160,7 @@ if app_mode == "📁 معاينة البيانات والتحليل الوصفي
         desc.loc["kurtosis"] = df.kurtosis(numeric_only=True)
 
         st.markdown(
-            "### 🖥️ النتائج الخام للإحصاء الوصفي (Raw Software Output):"
+            "### 🖥️️ النتائج الخام للإحصاء الوصفي (Raw Software Output):"
         )
         st.markdown(
             f'<div class="raw-output"><pre>{desc.to_string()}</pre></div>',
@@ -235,7 +235,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     s = pd.to_numeric(df[v_one], errors="coerce").dropna()
                     ts, pv = ttest_1samp(s, mu_val)
 
-                    st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
+                    st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                     st.markdown(
                         f'<div class="raw-output"><pre>One-Sample T-Test Results\n-------------------------\nVariable: {v_one}\nSample Mean: {s.mean():.4f}\nTarget Mu: {mu_val}\nt-statistic: {ts:.4f}\np-value: {pv:.6e}\nDegrees of Freedom: {len(s)-1}\nSignificance: {"Significant at 5%" if pv<0.05 else "Not Significant"}</pre></div>',
                         unsafe_allow_html=True,
@@ -368,7 +368,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     if len(groups) >= 2:
                         fs, ps = f_oneway(*groups)
 
-                        st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
+                        st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
                         st.markdown(
                             f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {"Significant" if ps<0.05 else "Not Significant"}</pre></div>',
                             unsafe_allow_html=True,
@@ -441,7 +441,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 X = sm.add_constant(df_r[x_ind])
                 m_ols = sm.OLS(y, X).fit()
 
-                st.markdown("### 🖥 النتائج الخام لنموذج الانحدار (Raw Software Output):")
+                st.markdown("### 🖥️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>{m_ols.summary().as_text()}</pre></div>',
                     unsafe_allow_html=True,
@@ -765,7 +765,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس المصلح بالكامل (السلاسل الزمنية)
+# 📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية
 # =========================================================
 elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية":
     st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX)")
@@ -815,7 +815,7 @@ Test critical values:  1% level       {float(adf_res[4]['1%']):.4f}
                       10% level       {float(adf_res[4]['10%']):.4f}
 *MacKinnon (1996) one-sided p-values.
 """
-                        st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة:")
+                        st.markdown("### 🖥️️ النتائج الخام لاختبارات جذر الوحدة:")
                         st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         res_ur = pd.DataFrame({
@@ -896,7 +896,6 @@ At most 1     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(
                     else:
                         model_ardl = ARDL(df_ardl[y_ardl], lags=1, exog=df_ardl[x_ardl], order=1).fit()
 
-                        # حساب معامل التحديد R2 ومعامل التحديد المعدل رياضياً لتفادي أي نقص في كائن ARDLResults
                         y_vals_ardl = df_ardl[y_ardl].values
                         resid_ardl = model_ardl.resid
                         ss_res_ardl = np.sum(resid_ardl ** 2)
@@ -1062,54 +1061,83 @@ Log likelihood                 : -42.1402
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 🌾 القسم السادس: مؤشرات الأمن الغذائي الشاملة
+# 🌾 القسم السادس المحدث: مؤشرات الأمن الغذائي الشاملة والسبعة المعتمدة
 # =========================================================
 elif app_mode == "🌾 القسم السادس: مؤشرات الأمن الغذائي الشاملة":
-    st.subheader("🌾 حساب مؤشرات الأمن الغذائي (الاكتفاء الذاتي، الفجوة، التغطية، ونصيب الفرد)")
+    st.subheader("🌾 حساب مؤشرات الأمن الغذائي المتقدمة (الفجوة الظاهرية والحقيقية، الاكتفاء الذاتي، فترات الكفاية، والمخزون ومعامل الأمن)")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        col_prod = st.selectbox("متغير الإنتاج المحلي:", num_cols, key="fs_p")
-        col_cons = st.selectbox("متغير الاستهلاك الكلي:", num_cols, key="fs_c")
-        col_imp = st.selectbox("متغير الواردات:", num_cols, key="fs_i")
-        col_exp = st.selectbox("متغير الصادرات:", num_cols, key="fs_e")
-        pop_val = st.number_input("إعداد السكان (مليون نسمة لتحديد النصيب):", value=100.0)
+        col_prod = st.selectbox("متغير الإنتاج المحلي (P):", num_cols, key="fs_p")
+        col_cons = st.selectbox("متغير الاستهلاك الكلي (C):", num_cols, key="fs_c")
+        col_imp = st.selectbox("متغير الواردات (M):", num_cols, key="fs_i")
+        col_exp = st.selectbox("متغير الصادرات (X):", num_cols, key="fs_e")
+        col_stock = st.selectbox("متغير المخزون الاستراتيجي (S):", num_cols, key="fs_s")
 
-        if st.button("🚀 حساب مؤشرات الأمن الغذائي"):
-            prod = df[col_prod].values
-            cons = df[col_cons].values
-            imp = df[col_imp].values
-            exp = df[col_exp].values
+        if st.button("🚀 حساب مؤشرات الأمن الغذائي السبعة المعتمدة"):
+            try:
+                prod = df[col_prod].apply(pd.to_numeric, errors='coerce').values
+                cons = df[col_cons].apply(pd.to_numeric, errors='coerce').values
+                imp = df[col_imp].apply(pd.to_numeric, errors='coerce').values
+                exp = df[col_exp].apply(pd.to_numeric, errors='coerce').values
+                stock = df[col_stock].apply(pd.to_numeric, errors='coerce').values
 
-            self_sufficiency = (prod / cons) * 100
-            food_gap = cons - prod
-            import_dependency = (imp / (prod + imp - exp)) * 100
-            per_capita_prod = (prod * 1000 / pop_val)
+                # 1. الفجوة الظاهرية = الاستهلاك الكلي - الإنتاج المحلي
+                apparent_gap = cons - prod
 
-            fs_df = pd.DataFrame({
-                "السنوات": df["السنوات"] if "السنوات" in df.columns else np.arange(len(df)),
-                "نسبة الاكتفاء الذاتي (%)": self_sufficiency.round(2),
-                "الفجوة الغذائية": food_gap.round(2),
-                "الاعتماد على الاستيراد (%)": import_dependency.round(2),
-                "نصيب الفرد من الإنتاج (كجم)": per_capita_prod.round(2),
-            })
+                # 2. الفجوة الحقيقية = الاستهلاك الكلي - (الإنتاج المحلي + صافي التجارة الخارجية)
+                net_trade = imp - exp
+                real_gap = cons - (prod + net_trade)
 
-            st.markdown("### 🖥️ النتائج الخام لحسابات الأمن الغذائي (Raw Computational Log):")
-            st.markdown(
-                f'<div class="raw-output"><pre>FOOD SECURITY INDICATORS COMPUTATION LOG\n----------------------------------------\nTotal Observations: {len(prod)}\nMean Self-Sufficiency: {self_sufficiency.mean():.2f}%\nMean Food Gap: {food_gap.mean():.2f}\nMean Import Dependency: {import_dependency.mean():.2f}%\nMean Per Capita Production: {per_capita_prod.mean():.2f} kg/capita</pre></div>',
-                unsafe_allow_html=True,
-            )
+                # 3. الاكتفاء الذاتي (%) = (الإنتاج المحلي / الاستهلاك الكلي) * 100
+                self_sufficiency = np.where(cons > 0, (prod / cons) * 100, 0)
 
-            st.markdown("### 📊 جدول مؤشرات الأمن الغذائي النهائي:")
-            st.dataframe(fs_df, use_container_width=True)
-            st.download_button("📥 تحميل مؤشرات الأمن الغذائي (Excel)", convert_df_to_excel(fs_df), "food_security.xlsx")
+                # 4. فترة كفاية الإنتاج (بالأشهر) = (الإنتاج المحلي / الاستهلاك الكلي) * 12
+                prod_sufficiency_period = np.where(cons > 0, (prod / cons) * 12, 0)
 
-            fig, ax = plt.subplots(figsize=(9, 4))
-            ax.plot(fs_df["السنوات"], fs_df["نسبة الاكتفاء الذاتي (%)"], color="#2e7d32", marker="o", label="Self-Sufficiency %")
-            ax.axhline(100, color="red", linestyle="--", label="Full Sufficiency Line")
-            ax.legend()
-            st.pyplot(fig)
+                # 5. المخزون الاستراتيجي
+                strategic_stock = stock
 
-            st.markdown(academic_report_template("مؤشرات الأمن الغذائي", "عكست المؤشرات حالة العجز أو الفائض في الميزان الغذائي وأهمية سد الفجوة الإنتاجية."), unsafe_allow_html=True)
+                # 6. فترة كفاية الواردات / المخزون (بالأشهر بناءً على الاستهلاك) = (المخزون / الاستهلاك) * 12
+                import_sufficiency_period = np.where(cons > 0, (stock / cons) * 12, 0)
+
+                # 7. معامل الأمن الغذائي = الإنتاج المحلي / (الإنتاج المحلي + الواردات)
+                total_available = prod + imp
+                food_security_coeff = np.where(total_available > 0, prod / total_available, 0)
+
+                fs_df = pd.DataFrame({
+                    "السنوات": df["السنوات"] if "السنوات" in df.columns else np.arange(len(df)),
+                    "الفجوة الظاهرية": apparent_gap.round(2),
+                    "الفجوة الحقيقية": real_gap.round(2),
+                    "الاكتفاء الذاتي (%)": self_sufficiency.round(2),
+                    "فترة كفاية الإنتاج (شهر)": prod_sufficiency_period.round(2),
+                    "المخزون الاستراتيجي": strategic_stock.round(2),
+                    "فترة كفاية الواردات والمخزون (شهر)": import_sufficiency_period.round(2),
+                    "معامل الأمن الغذائي": food_security_coeff.round(4),
+                })
+
+                st.markdown("### 🖥️ النتائج الخام لحسابات الأمن الغذائي المتقدمة (Raw Computational Log):")
+                st.markdown(
+                    f'<div class="raw-output"><pre>FOOD SECURITY SEVEN INDICATORS COMPUTATION LOG\n---------------------------------------------\nTotal Observations: {len(prod)}\nMean Apparent Gap: {apparent_gap.mean():.2f}\nMean Real Gap: {real_gap.mean():.2f}\nMean Self-Sufficiency: {self_sufficiency.mean():.2f}%\nMean Production Sufficiency Period: {prod_sufficiency_period.mean():.2f} months\nMean Strategic Stock: {strategic_stock.mean():.2f}\nMean Import/Stock Sufficiency Period: {import_sufficiency_period.mean():.2f} months\nMean Food Security Coefficient: {food_security_coeff.mean():.4f}</pre></div>',
+                    unsafe_allow_html=True,
+                )
+
+                st.markdown("### 📊 جدول مؤشرات الأمن الغذائي السبعة النهائي:")
+                st.dataframe(fs_df, use_container_width=True)
+                st.download_button("📥 تحميل مؤشرات الأمن الغذائي (Excel)", convert_df_to_excel(fs_df), "food_security_7_indicators.xlsx")
+
+                fig, ax = plt.subplots(figsize=(10, 4))
+                ax.plot(fs_df["السنوات"], fs_df["الاكتفاء الذاتي (%)"], color="#2e7d32", marker="o", label="الاكتفاء الذاتي %", linewidth=2)
+                ax.axhline(100, color="red", linestyle="--", label="خط الاكتفاء التام (100%)")
+                ax.set_title("مسار تطور نسبة الاكتفاء الذاتي عبر الزمن")
+                ax.set_xlabel("السنوات")
+                ax.set_ylabel("النسبة (%)")
+                ax.legend()
+                ax.grid(True, linestyle="--", alpha=0.6)
+                st.pyplot(fig)
+
+                st.markdown(academic_report_template("مؤشرات الأمن الغذائي الشاملة (المؤشرات السبعة)", "تم احتساب الفجوتين الظاهرية والحقيقية، نسب الاكتفاء الذاتي، فترات كفاية الإنتاج والمخزون والواردات، ومعامل الأمن الغذائي بدقة متناهية لتقييم الوضع الغذائي وصياغة السياسات الاستراتيجية."), unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"❌ حدث خطأ أثناء حساب مؤشرات الأمن الغذائي: {e}")
     else:
         st.info("👈 يرجى توفير البيانات أولاً.")
 
