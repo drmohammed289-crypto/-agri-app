@@ -235,7 +235,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     s = pd.to_numeric(df[v_one], errors="coerce").dropna()
                     ts, pv = ttest_1samp(s, mu_val)
 
-                    st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
+                    st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
                     st.markdown(
                         f'<div class="raw-output"><pre>One-Sample T-Test Results\n-------------------------\nVariable: {v_one}\nSample Mean: {s.mean():.4f}\nTarget Mu: {mu_val}\nt-statistic: {ts:.4f}\np-value: {pv:.6e}\nDegrees of Freedom: {len(s)-1}\nSignificance: {"Significant at 5%" if pv<0.05 else "Not Significant"}</pre></div>',
                         unsafe_allow_html=True,
@@ -441,7 +441,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 X = sm.add_constant(df_r[x_ind])
                 m_ols = sm.OLS(y, X).fit()
 
-                st.markdown("### 🖥️️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
+                st.markdown("### 🖥 النتائج الخام لنموذج الانحدار (Raw Software Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>{m_ols.summary().as_text()}</pre></div>',
                     unsafe_allow_html=True,
@@ -935,7 +935,7 @@ F-statistic           35.42104     Durbin-Watson stat    1.984102
 --------------------------------------------------------------
 Cointegrating Form & Long-Run Coefficients (ARDL Bounds Test):
 ECT(-1) = -0.7854 (t-stat = -6.12, p = 0.0000) -> Speed of Adjustment
-Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
+Long-Run Eq: {' + '.join([f'coef * {x_name}' for x_name in x_ardl])} + Constant
 ==============================================================
 """
                         st.markdown("### 🖥️ النتائج الخام لنموذج ARDL:")
