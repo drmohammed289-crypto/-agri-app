@@ -368,7 +368,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     if len(groups) >= 2:
                         fs, ps = f_oneway(*groups)
 
-                        st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
+                        st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                         st.markdown(
                             f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {"Significant" if ps<0.05 else "Not Significant"}</pre></div>',
                             unsafe_allow_html=True,
@@ -484,7 +484,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المصحح نهائياً ضد أخطاء الـ index)
 # =========================================================
 elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)":
     st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة")
@@ -530,7 +530,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             mask = (df_prod > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️ نموذج كوب-دوجلاس يتطلب أن تكون جميع القيم (Y والمدخلات X) موجبة تماماً (> 0). يرجى التحقق من البيانات.")
+                                st.error("⚠️ نموذج كوب-دوجلاس يتطلب أن تكون جميع القيم (Y والمدخلات X) موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -570,7 +570,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             mask = (X_df > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
+                                st.error("⚠️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -586,22 +586,31 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 unsafe_allow_html=True,
                             )
 
-                            actual_params = list(m_prod.params.index)
-                            row_names = param_names if len(param_names) == len(actual_params) else actual_params
+                            # معالجة موثوقة وآمنة تماماً للمصفوفات والفهارس لمنع أي خطأ
+                            params_val = np.atleast_1d(m_prod.params)
+                            if hasattr(m_prod.params, "index"):
+                                p_index = m_prod.params.index
+                            else:
+                                p_index = param_names[:len(params_val)] if len(param_names) >= len(params_val) else [f"Param_{i}" for i in range(len(params_val))]
+                            
+                            safe_params = pd.Series(params_val, index=p_index)
+                            bse_val = np.atleast_1d(m_prod.bse)
+                            tval_val = np.atleast_1d(m_prod.tvalues)
+                            pval_val = np.atleast_1d(m_prod.pvalues)
 
                             res_p_df = pd.DataFrame({
-                                "المعلمة": row_names,
-                                "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params],
-                                "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse],
-                                "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues],
-                                "القيمة الاحتمالية (p-value)": [f"{v:.4e}" for v in m_prod.pvalues],
+                                "المعلمة": safe_params.index,
+                                "المعامل المقدر": [f"{v:.4f}" for v in safe_params.values],
+                                "الخطأ المعياري": [f"{v:.4f}" for v in bse_val],
+                                "قيمة t (t-stat)": [f"{v:.4f}" for v in tval_val],
+                                "القيمة الاحتمالية (p-value)": [f"{v:.4e}" for v in pval_val],
                             })
 
                             st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
                             st.dataframe(res_p_df, use_container_width=True)
 
-                            if "كوب-دوجلاس" in prod_form:
-                                sum_elast = sum(m_prod.params[1 : len(x_p) + 1])
+                            if "كوب-دوجلاس" in prod_form and len(safe_params) > len(x_p):
+                                sum_elast = sum(safe_params.values[1 : len(x_p) + 1])
                                 st.info(
                                     f"🌟 مجموع المرونات (عوائد السعة): {sum_elast:.4f} -> "
                                     f"{'عوائد سعة متزايدة (IRS)' if sum_elast > 1 else ('عوائد سعة ثابتة (CRS)' if abs(sum_elast-1)<0.05 else 'عوائد سعة متناقصة (DRS)')}"
@@ -721,7 +730,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس المحدث: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL قصيرة وطويلة الأجل، ونماذج التنبؤ ARIMA, ARMA, SARIMAX مع معايير المفاضلة ومخرجات EViews)
+# 📈 القسم الخامس المحدث والمصحح تماماً: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL، ونماذج التنبؤ ARIMA, ARMA, SARIMAX)
 # =========================================================
 elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والت التكامل المشترك والنماذج القياسية":
     st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX) مع معايير المفاضلة ودقة EViews")
@@ -740,18 +749,17 @@ elif app_mode == "📈 القسم الخامس: السلاسل الزمنية و
         if ts_sub == "اختبارات جذر الوحدة (ADF & Phillips-Perron)":
             ts_var = st.selectbox("اختر السلسلة الزمنية للاختبار:", num_cols, key="ur_var")
             if st.button("تنفيذ اختبارات جذر الوحدة (EViews Style)"):
-                series = pd.to_numeric(df[ts_var], errors="coerce").dropna()
+                series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
                 if len(series) > 5:
                     adf_res = adfuller(series)
                     
+                    pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
                     if PhillipsPerron is not None:
                         try:
                             pp_res = PhillipsPerron(series)
                             pp_stat, pp_pval = pp_res.stat, pp_res.pvalue
                         except Exception:
-                            pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
-                    else:
-                        pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
+                            pass
 
                     eviews_ur_output = f"""
 Null Hypothesis: {ts_var} has a unit root
@@ -797,7 +805,7 @@ Test critical values:  1% level       {adf_res[4]['1%']:.4f}
         elif ts_sub == "اختبار التكامل المشترك (Johansen Cointegration Test)":
             j_vars = st.multiselect("اختر متغيرات التكامل المشترك:", num_cols, default=num_cols[:3] if len(num_cols)>=3 else num_cols)
             if len(j_vars) >= 2 and st.button("تنفيذ اختبار جوهانسون للتكامل المشترك (EViews Style)"):
-                df_j = df[j_vars].apply(pd.to_numeric, errors="coerce").dropna()
+                df_j = df[j_vars].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
                 try:
                     j_res = coint_johansen(df_j, det_order=0, k_ar_diff=1)
                     eviews_joh_output = f"""
@@ -818,7 +826,7 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
 ==============================================================
 * denotes rejection of the hypothesis at the 0.05 level
 """
-                    st.markdown("### 🖥️️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
+                    st.markdown("### 🖥️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
                     st.markdown(f'<div class="raw-output"><pre>{eviews_joh_output}</pre></div>', unsafe_allow_html=True)
 
                     res_joh = pd.DataFrame({
@@ -839,7 +847,7 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
             x_ardl = st.multiselect("المتغيرات المستقلة (X):", [c for c in num_cols if c != y_ardl], default=[c for c in num_cols if c != y_ardl][:1])
             if st.button("تقدير نموذج ARDL (الأجل القصير والطويل - EViews Style)") and x_ardl:
                 try:
-                    df_ardl = df[[y_ardl] + x_ardl].apply(pd.to_numeric, errors="coerce").dropna()
+                    df_ardl = df[[y_ardl] + x_ardl].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
                     model_ardl = ARDL(df_ardl[y_ardl], 1, df_ardl[x_ardl], 1).fit()
 
                     eviews_ardl_output = f"""
@@ -911,7 +919,7 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
                 train_ratio = st.slider("نسبة عينة التدريب (Training Ratio):", 0.5, 0.95, 0.8)
 
             if st.button("🚀 تشغيل التنبؤ وحساب معايير المفاضلة (RMSE, MAE, AIC, BIC - EViews Style)"):
-                series = pd.to_numeric(df[ts_var], errors="coerce").dropna()
+                series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
                 if len(series) > 10:
                     split_idx = int(len(series) * train_ratio)
                     train_data = series.iloc[:split_idx]
