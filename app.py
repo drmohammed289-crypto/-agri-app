@@ -477,7 +477,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المعدل والمصحح)
 # =========================================================
 elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ وبمدخلات متعددة)":
     st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة")
@@ -503,13 +503,14 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
 
         if st.button("🚀 تقدير صيغة دالة الإنتاج بمدخلات متعددة") and x_p:
             try:
-                df_prod = (
-                    df[[y_p] + x_p].apply(pd.to_numeric, errors="coerce").dropna()
-                )
-                df_prod = df_prod[(df_prod > 0).all(axis=1)]
+                cols_needed = [y_p] + x_p
+                df_prod = df[cols_needed].apply(pd.to_numeric, errors="coerce").dropna()
+                
+                if "كوب-دوجلاس" in prod_form or "اللوغاريتمية الخطية" in prod_form or "الأسية" in prod_form:
+                    df_prod = df_prod[(df_prod > 0).all(axis=1)]
 
                 if len(df_prod) < 3:
-                    st.error("البيانات غير كافية أو تحتوي على قيم صفرية/سالبة.")
+                    st.error("⚠️ البيانات غير كافية أو تحتوي على قيم صفرية/سالبة لا تتناسب مع النماذج المختارة.")
                 else:
                     y_vals = df_prod[y_p].values
                     X_vals = df_prod[x_p].values
@@ -517,33 +518,26 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                     if "كوب-دوجلاس" in prod_form:
                         dep_v = np.log(y_vals)
                         ind_v = sm.add_constant(np.log(X_vals))
-                        eq_name = "Cobb-Douglas: ln(Y) = a + Σ bi*ln(Xi)"
+                        param_names = ["Intercept"] + [f"ln({col})" for col in x_p]
                     elif "الخطية" in prod_form:
                         dep_v = y_vals
                         ind_v = sm.add_constant(X_vals)
-                        eq_name = "Linear: Y = a + Σ bi*Xi"
+                        param_names = ["Intercept"] + [str(col) for col in x_p]
                     elif "الأسية" in prod_form:
                         dep_v = np.log(y_vals)
                         ind_v = sm.add_constant(X_vals)
-                        eq_name = "Exponential: ln(Y) = a + Σ bi*Xi"
+                        param_names = ["Intercept"] + [str(col) for col in x_p]
                     elif "التربيعية" in prod_form:
                         dep_v = y_vals
                         X_quad = np.column_stack((X_vals, X_vals**2))
                         ind_v = sm.add_constant(X_quad)
-                        eq_name = "Quadratic: Y = a + b*X + c*X²"
+                        param_names = ["Intercept"] + [str(col) for col in x_p] + [f"{col}²" for col in x_p]
                     else:
                         dep_v = y_vals
                         ind_v = sm.add_constant(np.log(X_vals))
-                        eq_name = "Log-Linear: Y = a + b*ln(X)"
+                        param_names = ["Intercept"] + [f"ln({col})" for col in x_p]
 
                     m_prod = sm.OLS(dep_v, ind_v).fit()
-                    param_names = ["Intercept"]
-                    if "كوب-دوجلاس" in prod_form or "اللوغاريتمية الخطية" in prod_form:
-                        param_names += [f"ln({col})" for col in x_p]
-                    elif "التربيعية" in prod_form:
-                        param_names += [f"{col}" for col in x_p] + [f"{col}²" for col in x_p]
-                    else:
-                        param_names += [f"{col}" for col in x_p]
 
                     st.markdown(f"### 🖥️ النتائج الخام لدالة الإنتاج ({prod_form}) [Raw Software Output]:")
                     st.markdown(
@@ -552,18 +546,18 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                     )
 
                     res_p_df = pd.DataFrame({
-                        "المعلمة": param_names[: len(m_prod.params)],
-                        "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params.values],
-                        "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse.values],
-                        "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues.values],
-                        "القيمة الاحتمالية (p-value)": [f"{v:.4e}" for v in m_prod.pvalues.values],
+                        "المعلمة": param_names[:len(m_prod.params)],
+                        "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params],
+                        "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse],
+                        "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues],
+                        "القيمة الاحتمالية (p-value)": [f"{v:.4e}" for v in m_prod.pvalues],
                     })
 
                     st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
                     st.dataframe(res_p_df, use_container_width=True)
 
                     if "كوب-دوجلاس" in prod_form:
-                        sum_elast = sum(m_prod.params.values[1:])
+                        sum_elast = sum(m_prod.params[1:len(x_p)+1])
                         st.info(
                             f"🌟 مجموع المرونات (عوائد السعة): {sum_elast:.4f} -> "
                             f"{'عوائد سعة متزايدة (IRS)' if sum_elast > 1 else ('عوائد سعة ثابتة (CRS)' if abs(sum_elast-1)<0.05 else 'عوائد سعة متناقصة (DRS)')}"
@@ -574,7 +568,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
 
                     st.markdown(academic_report_template(f"تقدير دالة الإنتاج ({prod_form})", f"تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ {m_prod.rsquared:.4f}."), unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"خطأ في تقدير الدالة: {e}")
+                st.error(f"❌ حدث خطأ أثناء تقدير دالة الإنتاج: {e}")
     else:
         st.info("👈 يرجى توفير البيانات أولاً.")
 
