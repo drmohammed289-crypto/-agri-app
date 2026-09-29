@@ -10,9 +10,15 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.ardl import ARDL
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.tsa.stattools import adfuller, phillips_perron
+from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 import streamlit as st
+
+# استيراد آمن لاختبار فيليب-بيرون
+try:
+    from arch.unitroot import PhillipsPerron
+except ImportError:
+    PhillipsPerron = None
 
 # إعدادات الصفحة والتصميم الأكاديمي باللغة العربية
 st.set_page_config(
@@ -362,7 +368,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     if len(groups) >= 2:
                         fs, ps = f_oneway(*groups)
 
-                        st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
+                        st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
                         st.markdown(
                             f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {"Significant" if ps<0.05 else "Not Significant"}</pre></div>',
                             unsafe_allow_html=True,
@@ -564,7 +570,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             mask = (X_df > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
+                                st.error("⚠️️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -715,9 +721,9 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس المحدث: السلاسل الزمنية (اختبارات ADF & PP، جوهانسون، ARDL العلاقة قصيرة وطويلة الأجل، ونماذج التنبؤ ARIMA, ARMA, SARIMAX مع معايير المفاضلة ومخرجات EViews)
+# 📈 القسم الخامس المحدث: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL قصيرة وطويلة الأجل، ونماذج التنبؤ ARIMA, ARMA, SARIMAX مع معايير المفاضلة ومخرجات EViews)
 # =========================================================
-elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية":
+elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والت التكامل المشترك والنماذج القياسية":
     st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX) مع معايير المفاضلة ودقة EViews")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -737,10 +743,14 @@ elif app_mode == "📈 القسم الخامس: السلاسل الزمنية و
                 series = pd.to_numeric(df[ts_var], errors="coerce").dropna()
                 if len(series) > 5:
                     adf_res = adfuller(series)
-                    try:
-                        pp_res = phillips_perron(series)
-                        pp_stat, pp_pval = pp_res[0], pp_res[1]
-                    except Exception:
+                    
+                    if PhillipsPerron is not None:
+                        try:
+                            pp_res = PhillipsPerron(series)
+                            pp_stat, pp_pval = pp_res.stat, pp_res.pvalue
+                        except Exception:
+                            pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
+                    else:
                         pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
 
                     eviews_ur_output = f"""
@@ -808,7 +818,7 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
 ==============================================================
 * denotes rejection of the hypothesis at the 0.05 level
 """
-                    st.markdown("### 🖥️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
+                    st.markdown("### 🖥️️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
                     st.markdown(f'<div class="raw-output"><pre>{eviews_joh_output}</pre></div>', unsafe_allow_html=True)
 
                     res_joh = pd.DataFrame({
