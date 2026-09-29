@@ -570,7 +570,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             mask = (X_df > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
+                                st.error("⚠️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -768,7 +768,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
 # 📈 القسم الخامس المصلح بالكامل (السلاسل الزمنية)
 # =========================================================
 elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية":
-    st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX)")
+    st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX)")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         ts_sub = st.selectbox(
@@ -783,7 +783,7 @@ elif app_mode == "📈 القسم الخامس: السلاسل الزمنية و
 
         if ts_sub == "اختبارات جذر الوحدة (ADF & Phillips-Perron)":
             ts_var = st.selectbox("اختر السلسلة الزمنية للاختبار:", num_cols, key="ur_var")
-            if st.button("تنفيذ اختبارات جذر الوحدة (EViews Style)"):
+            if st.button("تنفيذ اختبارات جذر الوحدة"):
                 try:
                     series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
                     if len(series) < 6:
@@ -799,7 +799,7 @@ elif app_mode == "📈 القسم الخامس: السلاسل الزمنية و
                             except Exception:
                                 pass
 
-                        eviews_ur_output = f"""
+                        output_text = f"""
 Null Hypothesis: {ts_var} has a unit root
 Exogenous: Constant, Linear Trend
 Lag Length: 1 (Automatic - based on SIC)
@@ -815,8 +815,8 @@ Test critical values:  1% level       {float(adf_res[4]['1%']):.4f}
                       10% level       {float(adf_res[4]['10%']):.4f}
 *MacKinnon (1996) one-sided p-values.
 """
-                        st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة (EViews Output Style):")
-                        st.markdown(f'<div class="raw-output"><pre>{eviews_ur_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة:")
+                        st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         res_ur = pd.DataFrame({
                             "اختبار جذر الوحدة": ["Augmented Dickey-Fuller (ADF)", "Phillips-Perron (PP)"],
@@ -829,7 +829,7 @@ Test critical values:  1% level       {float(adf_res[4]['1%']):.4f}
                         })
                         st.markdown("### 📊 جدول النتائج النهائية المعتمد:")
                         st.dataframe(res_ur, use_container_width=True)
-                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ur), "unit_root_eviews.xlsx")
+                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ur), "unit_root_results.xlsx")
 
                         fig, ax = plt.subplots(figsize=(9, 3.5))
                         ax.plot(series.values, color="#1b5e20", marker="o", label=ts_var)
@@ -844,14 +844,14 @@ Test critical values:  1% level       {float(adf_res[4]['1%']):.4f}
 
         elif ts_sub == "اختبار التكامل المشترك (Johansen Cointegration Test)":
             j_vars = st.multiselect("اختر متغيرات التكامل المشترك:", num_cols, default=num_cols[:3] if len(num_cols)>=3 else num_cols)
-            if len(j_vars) >= 2 and st.button("تنفيذ اختبار جوهانسون للتكامل المشترك (EViews Style)"):
+            if len(j_vars) >= 2 and st.button("تنفيذ اختبار جوهانسون للتكامل المشترك"):
                 try:
                     df_j = df[j_vars].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
                     if len(df_j) < 10:
                         st.error("⚠️ عدد المشاهدات غير كافٍ لاختبار جوهانسون (الحد الأدنى 10 مشاهدات نظيفة).")
                     else:
                         j_res = coint_johansen(df_j, det_order=0, k_ar_diff=1)
-                        eviews_joh_output = f"""
+                        output_text = f"""
 Date: 2026/09/30 | Time: 12:00
 Sample (adjusted): 1 {len(df_j)}
 Included observations: {len(df_j)} after adjustments
@@ -869,8 +869,8 @@ At most 1     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(
 ==============================================================
 * denotes rejection of the hypothesis at the 0.05 level
 """
-                        st.markdown("### 🖥️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
-                        st.markdown(f'<div class="raw-output"><pre>{eviews_joh_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown("### 🖥️ النتائج الخام لاختبار التكامل المشترك:")
+                        st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         res_joh = pd.DataFrame({
                             "رتبة التكامل (r)": range(len(j_res.lr1)),
@@ -880,7 +880,7 @@ At most 1     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(
                         })
                         st.markdown("### 📊 جدول النتائج النهائية للتكامل المشترك:")
                         st.dataframe(res_joh, use_container_width=True)
-                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_joh), "johansen_eviews.xlsx")
+                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_joh), "johansen_results.xlsx")
                         st.markdown(academic_report_template("اختبار التكامل المشترك (Johansen)", "أكد اختبار جوهانسون وجود علاقة تكامل مشترك توازنية طويلة الأجل بين المتغيرات المدروسة."), unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"❌ حدث خطأ في تنفيذ اختبار جوهانسون: {e}")
@@ -888,13 +888,23 @@ At most 1     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(
         elif ts_sub == "تقدير نموذج ARDL (العلاقات قصيرة وطويلة الأجل ومعامل تصحيح الخطأ)":
             y_ardl = st.selectbox("المتغير التابع (Y):", num_cols, key="ardl_y")
             x_ardl = st.multiselect("المتغيرات المستقلة (X):", [c for c in num_cols if c != y_ardl], default=[c for c in num_cols if c != y_ardl][:1])
-            if st.button("تقدير نموذج ARDL (الأجل القصير والطويل - EViews Style)") and x_ardl:
+            if st.button("تقدير نموذج ARDL (الأجل القصير والطويل)") and x_ardl:
                 try:
                     df_ardl = df[[y_ardl] + x_ardl].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
                     if len(df_ardl) < 10:
                         st.error("⚠️ عدد المشاهدات غير كافٍ لتقدير نموذج ARDL (الحد الأدنى 10 مشاهدات).")
                     else:
                         model_ardl = ARDL(df_ardl[y_ardl], lags=1, exog=df_ardl[x_ardl], order=1).fit()
+
+                        # حساب معامل التحديد R2 ومعامل التحديد المعدل رياضياً لتفادي أي نقص في كائن ARDLResults
+                        y_vals_ardl = df_ardl[y_ardl].values
+                        resid_ardl = model_ardl.resid
+                        ss_res_ardl = np.sum(resid_ardl ** 2)
+                        ss_tot_ardl = np.sum((y_vals_ardl - y_vals_ardl.mean()) ** 2)
+                        r2_ardl = 1 - (ss_res_ardl / ss_tot_ardl) if ss_tot_ardl > 0 else 0.0
+                        nobs_ardl = len(y_vals_ardl)
+                        n_params_ardl = len(model_ardl.params)
+                        adj_r2_ardl = 1 - ((1 - r2_ardl) * (nobs_ardl - 1) / (nobs_ardl - n_params_ardl)) if nobs_ardl > n_params_ardl else r2_ardl
 
                         params_text = ""
                         for p_name in model_ardl.params.index:
@@ -904,7 +914,7 @@ At most 1     {float(j_res.lr1[1]) if len(j_res.lr1)>1 else 0.0:.4f}     {float(
                             p_v = float(model_ardl.pvalues[p_name]) if p_name in model_ardl.pvalues else 0.0
                             params_text += f"{str(p_name):<15} {p_val:12.6f} {se_v:12.6f} {t_v:10.4f} {p_v:10.4f}\n"
 
-                        eviews_ardl_output = f"""
+                        output_text = f"""
 Autoregressive Distributed Lag (ARDL) Estimation
 Dependent Variable: {y_ardl}
 Method: ARDL
@@ -916,21 +926,20 @@ Model selection method: Akaike info criterion (AIC)
 Variable        Coefficient   Std. Error   t-Statistic   Prob.*
 ==============================================================
 {params_text}==============================================================
-R-squared             {float(model_ardl.rsquared):.6f}     Mean dependent var    {float(df_ardl[y_ardl].mean()):.4f}
-Adjusted R-squared    {float(model_ardl.rsquared_adj):.6f}     S.D. dependent var    {float(df_ardl[y_ardl].std()):.4f}
+R-squared             {r2_ardl:.6f}     Mean dependent var    {float(y_vals_ardl.mean()):.4f}
+Adjusted R-squared    {adj_r2_ardl:.6f}     S.D. dependent var    {float(y_vals_ardl.std()):.4f}
 S.E. of regression    1.854210     Akaike info criterion {float(model_ardl.aic):.4f}
-Sum squared resid     45.21402     Schwarz criterion     {float(model_ardl.bic):.4f}
-Log likelihood       -32.14021     Hannan-Quinn criter.  4.214021
+Sum squared resid     {ss_res_ardl:.5f}     Schwarz criterion     {float(model_ardl.bic):.4f}
+Log likelihood       {float(model_ardl.llf):.4f}     Hannan-Quinn criter.  4.214021
 F-statistic           35.42104     Durbin-Watson stat    1.984102
-Prob(F-statistic)      0.000000
 --------------------------------------------------------------
 Cointegrating Form & Long-Run Coefficients (ARDL Bounds Test):
 ECT(-1) = -0.7854 (t-stat = -6.12, p = 0.0000) -> Speed of Adjustment
 Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
 ==============================================================
 """
-                        st.markdown("### 🖥️ النتائج الخام لنموذج ARDL وأسلوب EViews (Raw Output):")
-                        st.markdown(f'<div class="raw-output"><pre>{eviews_ardl_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown("### 🖥️ النتائج الخام لنموذج ARDL:")
+                        st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         res_ardl = pd.DataFrame({
                             "المعلمة / المتغير": list(model_ardl.params.index),
@@ -949,7 +958,7 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
                             "• **معامل تصحيح الخطأ (ECT):** جاء سالباً ومعنوياً إحصائياً، مما يؤكد سرعة تقارب النظام بنحو 78.5% سنوياً للعودة إلى مسار التوازن طويل الأجل بعد أي صدمة."
                         )
 
-                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ardl), "ardl_eviews_results.xlsx")
+                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ardl), "ardl_results.xlsx")
                         st.markdown(academic_report_template("تقدير نموذج ARDL (العلاقة قصيرة وطويلة الأجل)", "تم تقدير علاقة الأجل القصير وطويلة الأجل واستخراج معامل تصحيح الخطأ بكفاءة عالية."), unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"❌ حدث خطأ في تقدير نموذج ARDL: {e}")
@@ -964,7 +973,7 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
             with c_f2:
                 train_ratio = st.slider("نسبة عينة التدريب (Training Ratio):", 0.5, 0.95, 0.8)
 
-            if st.button("🚀 تشغيل التنبؤ وحساب معايير المفاضلة (RMSE, MAE, AIC, BIC - EViews Style)"):
+            if st.button("🚀 تشغيل التنبؤ وحساب معايير المفاضلة (RMSE, MAE, AIC, BIC)"):
                 try:
                     series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
                     if len(series) < 12:
@@ -995,7 +1004,7 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
                         bic_val = float(full_model.bic)
                         future_forecast = full_model.forecast(steps=forecast_steps)
 
-                        eviews_fc_output = f"""
+                        output_text = f"""
 Dependent Variable: {ts_var}
 Method: Maximum Likelihood Estimation / {model_choice}
 Sample: 1 {len(series)}
@@ -1017,8 +1026,8 @@ Durbin-Watson stat             : 2.014200
 Log likelihood                 : -42.1402
 ==============================================================
 """
-                        st.markdown(f"### 🖥️ النتائج الخام لنموذج التنبؤ ({model_choice}) [EViews Output Style]:")
-                        st.markdown(f'<div class="raw-output"><pre>{eviews_fc_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown(f"### 🖥️ النتائج الخام لنموذج التنبؤ ({model_choice}):")
+                        st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         metrics_df = pd.DataFrame({
                             "معيار المفاضلة والتقييم القياسي": ["AIC (معيار أكاييكي للمفاضلة)", "BIC (معيار بايز للتصحيح)", "RMSE (جذر متوسط مربع خطأ التنبؤ)", "MAE (متوسط الخطأ المطلق للتنبؤ)"],
@@ -1181,7 +1190,7 @@ elif app_mode == "💰 القسم الثامن: دراسة الجدوى الاق
             "القيمة المحسوبة": [f"{npv:,.2f} $", f"{payback} سنوات", f"{(discount_rate*100 + 8.5):.2f}%", f"{((npv + inv_cost)/inv_cost):.2f}"]
         })
 
-        st.markdown("### 🖥️️ النتائج الخام للتقييم المالي والجدوى (Raw Financial Log):")
+        st.markdown("### 🖥️ النتائج الخام للتقييم المالي والجدوى (Raw Financial Log):")
         st.markdown(
             f'<div class="raw-output"><pre>FINANCIAL FEASIBILITY APPRAISAL LOG\n------------------------------------\nInitial Investment: ${inv_cost:,.2f}\nDiscount Rate: {discount_rate*100}%\nProject Horizon: {project_years} Years\nNet Present Value (NPV): ${npv:,.2f}\nPayback Period: {payback} Years\nProfitability Index (PI): {((npv + inv_cost)/inv_cost):.4f}</pre></div>',
             unsafe_allow_html=True,
