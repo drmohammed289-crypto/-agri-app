@@ -160,7 +160,7 @@ if app_mode == "📁 معاينة البيانات والتحليل الوصفي
         desc.loc["kurtosis"] = df.kurtosis(numeric_only=True)
 
         st.markdown(
-            "### 🖥️️ النتائج الخام للإحصاء الوصفي (Raw Software Output):"
+            "### 🖥️ النتائج الخام للإحصاء الوصفي (Raw Software Output):"
         )
         st.markdown(
             f'<div class="raw-output"><pre>{desc.to_string()}</pre></div>',
@@ -368,7 +368,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     if len(groups) >= 2:
                         fs, ps = f_oneway(*groups)
 
-                        st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
+                        st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                         st.markdown(
                             f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {"Significant" if ps<0.05 else "Not Significant"}</pre></div>',
                             unsafe_allow_html=True,
@@ -441,7 +441,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 X = sm.add_constant(df_r[x_ind])
                 m_ols = sm.OLS(y, X).fit()
 
-                st.markdown("### 🖥️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
+                st.markdown("### 🖥️️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>{m_ols.summary().as_text()}</pre></div>',
                     unsafe_allow_html=True,
@@ -815,7 +815,7 @@ Test critical values:  1% level       {float(adf_res[4]['1%']):.4f}
                       10% level       {float(adf_res[4]['10%']):.4f}
 *MacKinnon (1996) one-sided p-values.
 """
-                        st.markdown("### 🖥️️ النتائج الخام لاختبارات جذر الوحدة:")
+                        st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة:")
                         st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         res_ur = pd.DataFrame({
@@ -1025,7 +1025,7 @@ Durbin-Watson stat             : 2.014200
 Log likelihood                 : -42.1402
 ==============================================================
 """
-                        st.markdown(f"### 🖥️ النتائج الخام لنموذج التنبؤ ({model_choice}):")
+                        st.markdown(f"### 🖥️️ النتائج الخام لنموذج التنبؤ ({model_choice}):")
                         st.markdown(f'<div class="raw-output"><pre>{output_text}</pre></div>', unsafe_allow_html=True)
 
                         metrics_df = pd.DataFrame({
@@ -1061,7 +1061,7 @@ Log likelihood                 : -42.1402
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 🌾 القسم السادس المحدث: مؤشرات الأمن الغذائي الشاملة والسبعة المعتمدة
+# 🌾 القسم السادس: مؤشرات الأمن الغذائي الشاملة
 # =========================================================
 elif app_mode == "🌾 القسم السادس: مؤشرات الأمن الغذائي الشاملة":
     st.subheader("🌾 حساب مؤشرات الأمن الغذائي المتقدمة (الفجوة الظاهرية والحقيقية، الاكتفاء الذاتي، فترات الكفاية، والمخزون ومعامل الأمن)")
@@ -1081,26 +1081,13 @@ elif app_mode == "🌾 القسم السادس: مؤشرات الأمن الغذ
                 exp = df[col_exp].apply(pd.to_numeric, errors='coerce').values
                 stock = df[col_stock].apply(pd.to_numeric, errors='coerce').values
 
-                # 1. الفجوة الظاهرية = الاستهلاك الكلي - الإنتاج المحلي
                 apparent_gap = cons - prod
-
-                # 2. الفجوة الحقيقية = الاستهلاك الكلي - (الإنتاج المحلي + صافي التجارة الخارجية)
                 net_trade = imp - exp
                 real_gap = cons - (prod + net_trade)
-
-                # 3. الاكتفاء الذاتي (%) = (الإنتاج المحلي / الاستهلاك الكلي) * 100
                 self_sufficiency = np.where(cons > 0, (prod / cons) * 100, 0)
-
-                # 4. فترة كفاية الإنتاج (بالأشهر) = (الإنتاج المحلي / الاستهلاك الكلي) * 12
                 prod_sufficiency_period = np.where(cons > 0, (prod / cons) * 12, 0)
-
-                # 5. المخزون الاستراتيجي
                 strategic_stock = stock
-
-                # 6. فترة كفاية الواردات / المخزون (بالأشهر بناءً على الاستهلاك) = (المخزون / الاستهلاك) * 12
                 import_sufficiency_period = np.where(cons > 0, (stock / cons) * 12, 0)
-
-                # 7. معامل الأمن الغذائي = الإنتاج المحلي / (الإنتاج المحلي + الواردات)
                 total_available = prod + imp
                 food_security_coeff = np.where(total_available > 0, prod / total_available, 0)
 
@@ -1142,40 +1129,138 @@ elif app_mode == "🌾 القسم السادس: مؤشرات الأمن الغذ
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 🚢 القسم السابع: مؤشرات التجارة الخارجية والقدرة التنافسية
+# 🚢 القسم السابع المحدث: مؤشرات التجارة الخارجية ومؤشرات القدرة التنافسية (منفصلة تماماً)
 # =========================================================
 elif app_mode == "🚢 القسم السابع: مؤشرات التجارة الخارجية والقدرة التنافسية":
-    st.subheader("🚢 قياس معدلات التغطية، المزايا النسبية الظاهرة (RCA)، والقدرة التنافسية")
+    st.subheader("🚢 تحليل مؤشرات التجارة الخارجية والقدرة التنافسية (أقسام منفصلة)")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        col_exp_item = st.selectbox("صادرات السلعة المدروسة:", num_cols, key="ti_e")
-        col_imp_item = st.selectbox("واردات السلعة المدروسة:", num_cols, key="ti_i")
         
-        if st.button("🚀 حساب مؤشرات التجارة الخارجية"):
-            exps = df[col_exp_item].values
-            imps = df[col_imp_item].values
+        # فصل مؤشرات التجارة الخارجية عن مؤشرات القدرة التنافسية
+        sub_trade_choice = st.selectbox(
+            "اختر التصنيف الفرعي للتحليل:",
+            [
+                "مؤشرات التجارة الخارجية",
+                "مؤشرات القدرة التنافسية"
+            ]
+        )
+        
+        if sub_trade_choice == "مؤشرات التجارة الخارجية":
+            st.markdown("#### 🌐 حساب وتحليل مؤشرات التجارة الخارجية المعتمدة")
+            col_e = st.selectbox("صادرات السلعة (Exports - X):", num_cols, key="t_exp")
+            col_m = st.selectbox("واردات السلعة (Imports - M):", num_cols, key="t_imp")
+            col_gdp = st.selectbox("الناتج المحلي الإجمالي / الاستهلاك الكلي (GDP / Cons):", num_cols, key="t_gdp")
             
-            coverage_ratio = (exps / imps) * 100
-            trade_balance = exps - imps
-            rca_proxy = (exps / (exps + imps)) * 2
-
-            tr_df = pd.DataFrame({
-                "الصادرات": exps,
-                "الواردات": imps,
-                "الميزان التجاري": trade_balance,
-                "معدل التغطية (%)": coverage_ratio.round(2),
-                "مؤشر القدرة التنافسية الظاهرة": rca_proxy.round(2),
-            })
-
-            st.markdown("### 🖥️ النتائج الخام لتحليلات التجارة الخارجية (Raw Computation Log):")
-            st.markdown(
-                f'<div class="raw-output"><pre>EXTERNAL TRADE PERFORMANCE LOG\n------------------------------\nMean Exports: {exps.mean():.4f}\nMean Imports: {imps.mean():.4f}\nMean Trade Balance: {trade_balance.mean():.4f}\nMean Coverage Ratio: {coverage_ratio.mean():.2f}%\nMean RCA Proxy: {rca_proxy.mean():.4f}</pre></div>',
-                unsafe_allow_html=True,
-            )
-
-            st.dataframe(tr_df, use_container_width=True)
-            st.download_button("📥 تحميل مؤشرات التجارة (Excel)", convert_df_to_excel(tr_df), "trade_indicators.xlsx")
-            st.markdown(academic_report_template("مؤشرات التجارة الخارجية", "أظهرت التحليلات قدرة السلعة على اختراق الأسواق الدولية ومعدل التغطية للصادرات مقابل الواردات."), unsafe_allow_html=True)
+            if st.button("🚀 حساب مؤشرات التجارة الخارجية"):
+                try:
+                    exps = df[col_e].apply(pd.to_numeric, errors='coerce').values
+                    imps = df[col_m].apply(pd.to_numeric, errors='coerce').values
+                    gdp_vals = df[col_gdp].apply(pd.to_numeric, errors='coerce').values
+                    
+                    # 1. معدل التغطية = (الصادرات / الواردات) * 100
+                    coverage_ratio = np.where(imps > 0, (exps / imps) * 100, 0)
+                    
+                    # 2. معدل التبعية (الاستيرادية) = (الواردات / الناتج أو الاستهلاك المحلي) * 100
+                    dependency_ratio = np.where(gdp_vals > 0, (imps / gdp_vals) * 100, 0)
+                    
+                    # 3. درجة المشاركة (الانفتاح التجاري) = ((الصادرات + الواردات) / الناتج المحلي) * 100
+                    participation_deg = np.where(gdp_vals > 0, ((exps + imps) / gdp_vals) * 100, 0)
+                    
+                    # 4. أهمية الواردات للناتج المحلي = (الواردات / الناتج المحلي) * 100
+                    import_importance = np.where(gdp_vals > 0, (imps / gdp_vals) * 100, 0)
+                    
+                    # 5. أهمية الصادرات للناتج المحلي = (الصادرات / الناتج المحلي) * 100
+                    export_importance = np.where(gdp_vals > 0, (exps / gdp_vals) * 100, 0)
+                    
+                    # 6. مرونة الصادرات ومرونة الواردات (باستخدام التغير النسبي / اللوغاريتمي)
+                    exp_elasticity = np.zeros_like(exps)
+                    imp_elasticity = np.zeros_like(imps)
+                    if len(exps) > 1:
+                        d_ln_e = np.diff(np.log(np.clip(exps, 1e-5, None)))
+                        d_ln_m = np.diff(np.log(np.clip(imps, 1e-5, None)))
+                        d_ln_gdp = np.diff(np.log(np.clip(gdp_vals, 1e-5, None)))
+                        d_ln_gdp = np.where(d_ln_gdp == 0, 1e-5, d_ln_gdp)
+                        exp_elasticity[1:] = d_ln_e / d_ln_gdp
+                        imp_elasticity[1:] = d_ln_m / d_ln_gdp
+                    
+                    trade_df = pd.DataFrame({
+                        "السنوات": df["السنوات"] if "السنوات" in df.columns else np.arange(len(df)),
+                        "معدل التغطية (%)": coverage_ratio.round(2),
+                        "معدل التبعية (%)": dependency_ratio.round(2),
+                        "درجة المشاركة (%)": participation_deg.round(2),
+                        "أهمية الواردات للناتج (%)": import_importance.round(2),
+                        "أهمية الصادرات للناتج (%)": export_importance.round(2),
+                        "مرونة الصادرات": exp_elasticity.round(4),
+                        "مرونة الواردات": imp_elasticity.round(4),
+                    })
+                    
+                    st.markdown("### 🖥️ النتائج الخام لمؤشرات التجارة الخارجية (Raw Computational Log):")
+                    st.markdown(
+                        f'<div class="raw-output"><pre>EXTERNAL TRADE INDICATORS LOG\n-----------------------------\nMean Coverage Ratio: {coverage_ratio.mean():.2f}%\nMean Dependency Ratio: {dependency_ratio.mean():.2f}%\nMean Trade Participation: {participation_deg.mean():.2f}%\nMean Import Importance to GDP: {import_importance.mean():.2f}%\nMean Export Importance to GDP: {export_importance.mean():.2f}%\nMean Export Elasticity: {exp_elasticity.mean():.4f}\nMean Import Elasticity: {imp_elasticity.mean():.4f}</pre></div>',
+                        unsafe_allow_html=True,
+                    )
+                    
+                    st.markdown("### 📊 جدول مؤشرات التجارة الخارجية النهائي:")
+                    st.dataframe(trade_df, use_container_width=True)
+                    st.download_button("📥 تحميل مؤشرات التجارة الخارجية (Excel)", convert_df_to_excel(trade_df), "external_trade_indicators.xlsx")
+                    st.markdown(academic_report_template("مؤشرات التجارة الخارجية الشاملة", "أوضحت مؤشرات التجارة الخارجية معدلات التغطية، التبعية الاستيرادية، درجة المشاركة والانفتاح التجاري، وأهمية الصادرات والواردات للناتج المحلي مع تقدير المرونات."), unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"❌ حدث خطأ أثناء حساب مؤشرات التجارة الخارجية: {e}")
+                    
+        else:
+            st.markdown("#### 🏆 حساب وتحليل مؤشرات القدرة التنافسية المعتمدة")
+            col_ex = st.selectbox("صادرات السلعة (Exports):", num_cols, key="c_exp")
+            col_im = st.selectbox("واردات السلعة (Imports):", num_cols, key="c_imp")
+            col_prod_c = st.selectbox("الإنتاج المحلي (Production):", num_cols, key="c_prod")
+            col_price_d = st.selectbox("السعر المحلي (Domestic Price):", num_cols, key="c_pd")
+            col_price_w = st.selectbox("السعر العالمي (World Price):", num_cols, key="c_pw")
+            
+            if st.button("🚀 حساب مؤشرات القدرة التنافسية"):
+                try:
+                    exps = df[col_ex].apply(pd.to_numeric, errors='coerce').values
+                    imps = df[col_im].apply(pd.to_numeric, errors='coerce').values
+                    prod = df[col_prod_c].apply(pd.to_numeric, errors='coerce').values
+                    p_dom = df[col_price_d].apply(pd.to_numeric, errors='coerce').values
+                    p_wld = df[col_price_w].apply(pd.to_numeric, errors='coerce').values
+                    
+                    # 1. الميزة النسبية الظاهرة (RCA Proxy)
+                    total_trade = exps + imps
+                    rca_proxy = np.where(total_trade > 0, (exps / total_trade) * 2, 1.0)
+                    
+                    # 2. النصيب السوقي (%)
+                    market_share = np.where((prod + exps) > 0, (exps / (prod + exps)) * 100, 0)
+                    
+                    # 3. معامل الاختراق (%)
+                    domestic_supply = prod + imps - exps
+                    penetration_ratio = np.where(domestic_supply > 0, (imps / domestic_supply) * 100, 0)
+                    
+                    # 4. مؤشر التنافسية السعرية
+                    price_competitiveness = np.where(p_dom > 0, p_wld / p_dom, 1.0)
+                    
+                    # 5. كفاءة الصادرات (%)
+                    export_efficiency = np.where(prod > 0, (exps / prod) * 100, 0)
+                    
+                    comp_df = pd.DataFrame({
+                        "السنوات": df["السنوات"] if "السنوات" in df.columns else np.arange(len(df)),
+                        "الميزة النسبية الظاهرة (RCA)": rca_proxy.round(4),
+                        "النصيب السوقي (%)": market_share.round(2),
+                        "معامل الاختراق (%)": penetration_ratio.round(2),
+                        "مؤشر التنافسية السعرية": price_competitiveness.round(4),
+                        "كفاءة الصادرات (%)": export_efficiency.round(2),
+                    })
+                    
+                    st.markdown("### 🖥️ النتائج الخام لمؤشرات القدرة التنافسية (Raw Computational Log):")
+                    st.markdown(
+                        f'<div class="raw-output"><pre>COMPETITIVENESS INDICATORS LOG\n------------------------------\nMean RCA Proxy: {rca_proxy.mean():.4f}\nMean Market Share: {market_share.mean():.2f}%\nMean Import Penetration Ratio: {penetration_ratio.mean():.2f}%\nMean Price Competitiveness Index: {price_competitiveness.mean():.4f}\nMean Export Efficiency: {export_efficiency.mean():.2f}%</pre></div>',
+                        unsafe_allow_html=True,
+                    )
+                    
+                    st.markdown("### 📊 جدول مؤشرات القدرة التنافسية النهائي:")
+                    st.dataframe(comp_df, use_container_width=True)
+                    st.download_button("📥 تحميل مؤشرات القدرة التنافسية (Excel)", convert_df_to_excel(comp_df), "competitiveness_indicators.xlsx")
+                    st.markdown(academic_report_template("مؤشرات القدرة التنافسية الشاملة", "تم احتساب مؤشرات الميزة النسبية الظاهرة، النصيب السوقي، معامل الاختراق، التنافسية السعرية، وكفاءة الصادرات لتقييم الموقف التنافسي للسلعة."), unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"❌ حدث خطأ أثناء حساب مؤشرات القدرة التنافسية: {e}")
     else:
         st.info("👈 يرجى توفير البيانات أولاً.")
 
