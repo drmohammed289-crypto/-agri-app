@@ -477,10 +477,10 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المصحح جذرياً ونهائياً)
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المصحح والمطور بالكامل مع الصيغ والرسومات)
 # =========================================================
 elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)":
-    st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة")
+    st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية، تحليل تناقص الغلة، والتمثيل البصري")
     if df is not None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         prod_form = st.selectbox(
@@ -501,29 +501,29 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
             key="xp_all_multi",
         )
 
-        if st.button("🚀 تقدير صيغة دالة الإنتاج بمدخلات متعددة"):
+        if st.button("🚀 تقدير دالة الإنتاج وعرض الصيغة والرسومات"):
             if not x_p:
-                st.warning("⚠️ يرجى اختيار متغير مستقل واحد (مدخل X) على الأقل.")
+                st.warning("⚠️ يرجى اختيار مدخل مستقل (X) واحد على الأقل.")
             else:
                 try:
                     cols_needed = [y_p] + x_p
                     df_prod = df[cols_needed].apply(pd.to_numeric, errors="coerce").dropna()
 
                     if len(df_prod) < 3:
-                        st.error("⚠️ عدد المشاهدات الصالحة بعد تنظيف البيانات أقل من 3، وهو غير كافٍ لتقدير النموذج.")
+                        st.error("⚠️ عدد المشاهدات غير كافٍ لتقدير النموذج (يجب أن يكون 3 مشاهدات على الأقل).")
                     else:
                         m_prod = None
                         param_names = []
-
                         y_vals = df_prod[y_p].values
                         X_df = df_prod[x_p]
                         X_vals = X_df.values if len(x_p) > 1 else X_df.values.reshape(-1, 1)
 
                         if "كوب-دوجلاس" in prod_form:
+                            st.markdown("**الصيغة الرياضية:** $\\ln(Y) = \\beta_0 + \\sum \\beta_i \\ln(X_i) + u$")
                             mask = (df_prod > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️ نموذج كوب-دوجلاس يتطلب أن تكون جميع القيم (Y والمدخلات X) موجبة تماماً (> 0). يرجى التحقق من البيانات.")
+                                st.error("⚠️ يتطلب نموذج كوب-دوجلاس أن تكون جميع القيم موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -533,16 +533,18 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 m_prod = sm.OLS(dep_v, ind_v).fit()
 
                         elif "الخطية" in prod_form:
+                            st.markdown("**الصيغة الرياضية:** $Y = \\beta_0 + \\sum \\beta_i X_i + u$")
                             dep_v = y_vals
                             ind_v = sm.add_constant(X_vals)
                             param_names = ["Intercept"] + [str(col) for col in x_p]
                             m_prod = sm.OLS(dep_v, ind_v).fit()
 
                         elif "الأسية" in prod_form:
+                            st.markdown("**الصيغة الرياضية:** $\\ln(Y) = \\beta_0 + \\sum \\beta_i X_i + u$")
                             mask = df_prod[y_p] > 0
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️ نموذج الأسية يتطلب أن يكون متغير الإنتاج التابع (Y) موجباً بالكامل (> 0).")
+                                st.error("⚠️ يتطلب نموذج الأسية أن يكون الإنتاج التابع (Y) موجباً بالكامل.")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -552,6 +554,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 m_prod = sm.OLS(dep_v, ind_v).fit()
 
                         elif "التربيعية" in prod_form:
+                            st.markdown("**الصيغة الرياضية:** $Y = \\beta_0 + \\sum \\beta_i X_i + \\sum \\gamma_i X_i^2 + u$")
                             dep_v = y_vals
                             X_sq = X_vals ** 2
                             X_combined = np.hstack((X_vals, X_sq))
@@ -560,10 +563,11 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             m_prod = sm.OLS(dep_v, ind_v).fit()
 
                         else:  # اللوغاريتمية الخطية
+                            st.markdown("**الصيغة الرياضية:** $Y = \\beta_0 + \\sum \\beta_i \\ln(X_i) + u$")
                             mask = (X_df > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
+                                st.error("⚠️ يتطلب النموذج اللوغاريتمي الخطي أن تكون المدخلات (X) موجبة تماماً.")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -593,11 +597,23 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
                             st.dataframe(res_p_df, use_container_width=True)
 
+                            # تحليل عוائد السعة وتناقص الغلة
                             if "كوب-دوجلاس" in prod_form:
                                 sum_elast = sum(m_prod.params[1 : len(x_p) + 1])
+                                if sum_elast > 1.05:
+                                    returns_desc = "عوائد سعة متزايدة (Increasing Returns to Scale - IRS)"
+                                elif abs(sum_elast - 1.0) <= 0.05:
+                                    returns_desc = "عوائد سعة ثابتة (Constant Returns to Scale - CRS)"
+                                else:
+                                    returns_desc = "عوائد سعة متناقصة / تناقص الغلة (Decreasing Returns to Scale - DRS)"
+                                
                                 st.info(
-                                    f"🌟 مجموع المرونات (عوائد السعة): {sum_elast:.4f} -> "
-                                    f"{'عوائد سعة متزايدة (IRS)' if sum_elast > 1 else ('عوائد سعة ثابتة (CRS)' if abs(sum_elast-1)<0.05 else 'عوائد سعة متناقصة (DRS)')}"
+                                    f"🌟 **تحليل تناقص الغلة وعوائد السعة:** مجموع مرونات المدخلات = {sum_elast:.4f} -> **{returns_desc}**."
+                                    " (يعكس قانون تناقص الغلة مدى استجابة الإنتاج الكلي عند زيادة جميع عناصر الإنتاج بنسبة معينة)."
+                                )
+                            elif "التربيعية" in prod_form:
+                                st.info(
+                                    "🌾 **تحليل تناقص الغلة (Law of Diminishing Returns):** المعاملات التربيعية الموجبة أو السالبة ($X^2$) توضح مرحلة تناقص الإنتاجية الحدية وبلوغ الإنتاج مرحلة الثبات أو التناقص وفقاً للنظرية الاقتصادية."
                                 )
 
                             st.info(
@@ -609,10 +625,42 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 "prod_results.xlsx",
                             )
 
+                            # 📈 الرسومات البيانية التوضيحية
+                            st.markdown("---")
+                            st.markdown("### 📈 التمثيل البصري والرسومات البيانية لدالة الإنتاج:")
+                            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+                            # الرسم الأول: القيم الفعلية مقابل المتنبأ بها
+                            fitted_vals = m_prod.fittedvalues
+                            actual_y_target = np.exp(dep_v) if ("كوب-دوجلاس" in prod_form or "الأسية" in prod_form) else dep_v
+                            pred_y_target = np.exp(fitted_vals) if ("كوب-دوجلاس" in prod_form or "الأسية" in prod_form) else fitted_vals
+
+                            ax1.scatter(actual_y_target, pred_y_target, color="#1b5e20", alpha=0.8, edgecolors="k", s=50)
+                            min_v, max_v = min(actual_y_target.min(), pred_y_target.min()), max(actual_y_target.max(), pred_y_target.max())
+                            ax1.plot([min_v, max_v], [min_v, max_v], "r--", lw=2, label="خط المطابقة المثالي (45°)")
+                            ax1.set_title("القيم الفعلية مقابل القيم المتنبأ بها (Actual vs Fitted)")
+                            ax1.set_xlabel("القيم الفعلية (Y)")
+                            ax1.set_ylabel("القيم المتنبأ بها")
+                            ax1.grid(True, linestyle="--", alpha=0.6)
+                            ax1.legend()
+
+                            # الرسم الثاني: أعمدة معاملات المرونات أو المعلمات المقدرة
+                            coef_vals = m_prod.params[1:] if len(m_prod.params) > 1 else m_prod.params
+                            coef_labels = row_names[1:] if len(row_names) > 1 else row_names
+                            ax2.bar(coef_labels, coef_vals, color="#2e7d32", edgecolor="black", alpha=0.8)
+                            ax2.axhline(0, color="grey", linestyle="--", linewidth=1)
+                            ax2.set_title("تقديرات المعلمات والمرونات الاقتصادية للمدخلات")
+                            ax2.set_xlabel("المتغيرات المستقلة (Inputs)")
+                            ax2.set_ylabel("قيمة المعامل المقدر")
+                            plt.xticks(rotation=25)
+                            ax2.grid(True, linestyle="--", alpha=0.6)
+
+                            st.pyplot(fig)
+
                             st.markdown(
                                 academic_report_template(
                                     f"تقدير دالة الإنتاج ({prod_form})",
-                                    f"تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ {m_prod.rsquared:.4f}.",
+                                    f"تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ {m_prod.rsquared:.4f} وتم عرض رسومات المطابقة وتحليل تناقص الغلة وعوائد السعة.",
                                 ),
                                 unsafe_allow_html=True,
                             )
@@ -662,7 +710,7 @@ elif app_mode == "⚙️ القسم الثالث: نموذج كفاءة بغلا
                     "عائد السعة (Returns to Scale)": np.random.choice(["ثابت (CRS)", "متزايد (IRS)", "متناقص (DRS)"], n_units),
                 })
 
-                st.markdown("### 🖥 النتائج الخام لنموذج كفاءة DEA (Raw Solver & Cost Minimization Output):")
+                st.markdown("### 🖥️ النتائج الخام لنموذج كفاءة DEA (Raw Solver & Cost Minimization Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>==============================================================\nDATA ENVELOPMENT ANALYSIS (DEA) - COST/ALLOCATIVE EFFICIENCY\n==============================================================\nOptimization Solver: Simplex / Linear Programming (Charnes-Cooper-Rhodes)\nNumber of DMUs Evaluated: {n_units}\nInputs Included: {inputs_dea}\nOutputs Included: {outputs_dea}\nInput Prices Used: {input_prices}\nOutput Unit Price: {output_price}\n--------------------------------------------------------------\nMean Technical Efficiency (TE): {tech_eff.mean():.4f}\nMean Allocative Efficiency (AE): {alloc_eff.mean():.4f}\nMean Economic/Cost Efficiency (EE): {econ_eff.mean():.4f}\nStatus: Optimal Solution Found for All DMUs\n==============================================================</pre></div>',
                     unsafe_allow_html=True,
@@ -964,7 +1012,7 @@ elif app_mode == "💰 القسم الثامن: دراسة الجدوى الاق
             "القيمة المحسوبة": [f"{npv:,.2f} $", f"{payback} سنوات", f"{(discount_rate*100 + 8.5):.2f}%", f"{((npv + inv_cost)/inv_cost):.2f}"]
         })
 
-        st.markdown("### 🖥️️ النتائج الخام للتقييم المالي والجدوى (Raw Financial Log):")
+        st.markdown("### 🖥️ النتائج الخام للتقييم المالي والجدوى (Raw Financial Log):")
         st.markdown(
             f'<div class="raw-output"><pre>FINANCIAL FEASIBILITY APPRAISAL LOG\n------------------------------------\nInitial Investment: ${inv_cost:,.2f}\nDiscount Rate: {discount_rate*100}%\nProject Horizon: {project_years} Years\nNet Present Value (NPV): ${npv:,.2f}\nPayback Period: {payback} Years\nProfitability Index (PI): {((npv + inv_cost)/inv_cost):.4f}</pre></div>',
             unsafe_allow_html=True,
