@@ -361,7 +361,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     if len(groups) >= 2:
                         fs, ps = f_oneway(*groups)
 
-                        st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
+                        st.markdown("### 🖥️️ النتائج الخام للاختبار (Raw Output):")
                         st.markdown(
                             f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {"Significant" if ps<0.05 else "Not Significant"}</pre></div>',
                             unsafe_allow_html=True,
@@ -583,12 +583,12 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 unsafe_allow_html=True,
                             )
 
-                            actual_params = list(m_prod.params.index)
-                            row_names = param_names if len(param_names) == len(actual_params) else actual_params
+                            # بناء جدول النتائج بشكل آمن تماماً ضد مشاكل المصفوفات
+                            safe_params = pd.Series(m_prod.params, index=param_names[:len(m_prod.params)])
 
                             res_p_df = pd.DataFrame({
-                                "المعلمة": row_names,
-                                "المعامل المقدر": [f"{v:.4f}" for v in m_prod.params],
+                                "المعلمة": safe_params.index,
+                                "المعامل المقدر": [f"{v:.4f}" for v in safe_params.values],
                                 "الخطأ المعياري": [f"{v:.4f}" for v in m_prod.bse],
                                 "قيمة t (t-stat)": [f"{v:.4f}" for v in m_prod.tvalues],
                                 "القيمة الاحتمالية (p-value)": [f"{v:.4e}" for v in m_prod.pvalues],
@@ -597,9 +597,9 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             st.markdown("### 📊 جدول النتائج النهائية وملخص المطابقة:")
                             st.dataframe(res_p_df, use_container_width=True)
 
-                            # تحليل عוائد السعة وتناقص الغلة
+                            # تحليل عوائد السعة وتناقص الغلة
                             if "كوب-دوجلاس" in prod_form:
-                                sum_elast = sum(m_prod.params[1 : len(x_p) + 1])
+                                sum_elast = sum(safe_params.values[1 : len(x_p) + 1])
                                 if sum_elast > 1.05:
                                     returns_desc = "عوائد سعة متزايدة (Increasing Returns to Scale - IRS)"
                                 elif abs(sum_elast - 1.0) <= 0.05:
@@ -645,8 +645,8 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             ax1.legend()
 
                             # الرسم الثاني: أعمدة معاملات المرونات أو المعلمات المقدرة
-                            coef_vals = m_prod.params[1:] if len(m_prod.params) > 1 else m_prod.params
-                            coef_labels = row_names[1:] if len(row_names) > 1 else row_names
+                            coef_vals = safe_params.values[1:]
+                            coef_labels = list(safe_params.index)[1:]
                             ax2.bar(coef_labels, coef_vals, color="#2e7d32", edgecolor="black", alpha=0.8)
                             ax2.axhline(0, color="grey", linestyle="--", linewidth=1)
                             ax2.set_title("تقديرات المعلمات والمرونات الاقتصادية للمدخلات")
@@ -762,7 +762,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية
+# 📈 القسم الخامس: السلاسل الزمنية والت التكامل المشترك والنماذج القياسية
 # =========================================================
 elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والتكامل المشترك والنماذج القياسية":
     st.subheader("📈 تحليلات السلاسل الزمنية، جذر الوحدة، التكامل المشترك (Johansen)، نماذج ARDL، و ARIMA والتنبؤ")
