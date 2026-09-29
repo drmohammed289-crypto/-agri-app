@@ -484,7 +484,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة (مع إضافة الرسومات البيانية المطلوبة تماماً)
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (مع الرسومات البيانية)
 # =========================================================
 elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)":
     st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة")
@@ -570,7 +570,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                             mask = (X_df > 0).all(axis=1)
                             df_clean = df_prod[mask]
                             if len(df_clean) < 3:
-                                st.error("⚠️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
+                                st.error("⚠️️ نموذج اللوغاريتمية الخطية يتطلب أن تكون جميع المدخلات المستقلة (X) موجبة تماماً (> 0).")
                             else:
                                 y_v = df_clean[y_p].values
                                 X_v = df_clean[x_p].values if len(x_p) > 1 else df_clean[x_p].values.reshape(-1, 1)
@@ -621,7 +621,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 "prod_results.xlsx",
                             )
 
-                            # 🎨 إضافة الرسومات البيانية التحليلية لدالة الإنتاج المطلوبة تماماً
+                            # الرسوم البيانية التحليلية لنموذج دالة الإنتاج
                             st.markdown("---")
                             st.markdown("### 📈 الرسوم البيانية التحليلية لنموذج دالة الإنتاج المقدر:")
                             
@@ -765,7 +765,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس المصلح والمضمون بالكامل: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL، ونماذج التنبؤ)
+# 📈 القسم الخامس المصلح بالكامل: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL، نماذج التنبؤ)
 # =========================================================
 elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والت التكامل المشترك والنماذج القياسية":
     st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX) مع معايير المفاضلة ودقة EViews")
@@ -852,7 +852,7 @@ Test critical values:  1% level       {adf_res[4]['1%']:.4f}
                     else:
                         j_res = coint_johansen(df_j, det_order=0, k_ar_diff=1)
                         eviews_joh_output = f"""
-Date: 2026/09/29 | Time: 22:15
+Date: 2026/09/30 | Time: 12:00
 Sample (adjusted): 1 {len(df_j)}
 Included observations: {len(df_j)} after adjustments
 Trend assumption: Linear deterministic trend
@@ -896,6 +896,14 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
                     else:
                         model_ardl = ARDL(df_ardl[y_ardl], 1, df_ardl[x_ardl], 1).fit()
 
+                        # بناء تقرير المعلمات الآمن بدون أخطاء فهرسة
+                        params_text = ""
+                        for p_name, p_val in model_ardl.params.items():
+                            se_v = model_ardl.bse.get(p_name, 0.0)
+                            t_v = model_ardl.tvalues.get(p_name, 0.0)
+                            p_v = model_ardl.pvalues.get(p_name, 0.0)
+                            params_text += f"{p_name:<15} {p_val:12.6f} {se_v:12.6f} {t_v:10.4f} {p_v:10.4f}\n"
+
                         eviews_ardl_output = f"""
 Autoregressive Distributed Lag (ARDL) Estimation
 Dependent Variable: {y_ardl}
@@ -905,17 +913,9 @@ Included observations: {len(df_ardl)}
 Maximum dependent lags: 1 (Automatic selection)
 Model selection method: Akaike info criterion (AIC)
 ==============================================================
-Variable     Coefficient   Std. Error   t-Statistic   Prob.*
+Variable        Coefficient   Std. Error   t-Statistic   Prob.*
 ==============================================================
-{y_ardl}(-1)     {model_ardl.params.iloc[0]:.6f}     {model_ardl.bse.iloc[0]:.6f}     {model_ardl.tvalues.iloc[0]:.4f}     {model_ardl.pvalues.iloc[0]:.4f}
-"""
-                        for idx, col in enumerate(x_ardl):
-                            p_idx = idx + 1
-                            if p_idx < len(model_ardl.params):
-                                eviews_ardl_output += f"{col}          {model_ardl.params.iloc[p_idx]:.6f}     {model_ardl.bse.iloc[p_idx]:.6f}     {model_ardl.tvalues.iloc[p_idx]:.4f}     {model_ardl.pvalues.iloc[p_idx]:.4f}\n"
-
-                        eviews_ardl_output += f"""C            {model_ardl.params.iloc[-1]:.6f}     {model_ardl.bse.iloc[-1]:.6f}     {model_ardl.tvalues.iloc[-1]:.4f}     {model_ardl.pvalues.iloc[-1]:.4f}
-==============================================================
+{params_text}==============================================================
 R-squared             {model_ardl.rsquared:.6f}     Mean dependent var    {df_ardl[y_ardl].mean():.4f}
 Adjusted R-squared    {model_ardl.rsquared_adj:.6f}     S.D. dependent var    {df_ardl[y_ardl].std():.4f}
 S.E. of regression    1.854210     Akaike info criterion {model_ardl.aic:.4f}
@@ -933,7 +933,7 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
                         st.markdown(f'<div class="raw-output"><pre>{eviews_ardl_output}</pre></div>', unsafe_allow_html=True)
 
                         res_ardl = pd.DataFrame({
-                            "المعلمة / المتغير": model_ardl.params.index,
+                            "المعلمة / المتغير": list(model_ardl.params.index),
                             "المعامل المقدر (Coefficient)": [f"{v:.4f}" for v in model_ardl.params.values],
                             "الخطأ المعياري (Std. Error)": [f"{v:.4f}" for v in model_ardl.bse.values],
                             "قيمة t (t-Statistic)": [f"{v:.4f}" for v in model_ardl.tvalues.values],
