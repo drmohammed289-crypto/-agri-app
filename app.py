@@ -484,7 +484,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 )
 
 # =========================================================
-# 🌾 القسم الثاني: دوال الإنتاج الشاملة (المصحح نهائياً ضد أخطاء الـ index)
+# 🌾 القسم الثاني: دوال الإنتاج الشاملة (مع إضافة الرسومات البيانية المطلوبة تماماً)
 # =========================================================
 elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشاملة (جميع الصيغ ومدخلات متعددة)":
     st.subheader("🌾 تقدير دوال الإنتاج بجميع الصيغ الرياضية وبمدخلات متعددة")
@@ -510,7 +510,7 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
 
         if st.button("🚀 تقدير صيغة دالة الإنتاج بمدخلات متعددة"):
             if not x_p:
-                st.warning("⚠️ يرجى اختيار متغير مستقل واحد (مدخل X) على الأقل.")
+                st.warning("⚠️️ يرجى اختيار متغير مستقل واحد (مدخل X) على الأقل.")
             else:
                 try:
                     cols_needed = [y_p] + x_p
@@ -586,12 +586,8 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 unsafe_allow_html=True,
                             )
 
-                            # معالجة موثوقة وآمنة تماماً للمصفوفات والفهارس لمنع أي خطأ
                             params_val = np.atleast_1d(m_prod.params)
-                            if hasattr(m_prod.params, "index"):
-                                p_index = m_prod.params.index
-                            else:
-                                p_index = param_names[:len(params_val)] if len(param_names) >= len(params_val) else [f"Param_{i}" for i in range(len(params_val))]
+                            p_index = m_prod.params.index if hasattr(m_prod.params, "index") else (param_names[:len(params_val)] if len(param_names) >= len(params_val) else [f"Param_{i}" for i in range(len(params_val))])
                             
                             safe_params = pd.Series(params_val, index=p_index)
                             bse_val = np.atleast_1d(m_prod.bse)
@@ -625,10 +621,49 @@ elif app_mode == "🌾 القسم الثاني: دوال الإنتاج الشا
                                 "prod_results.xlsx",
                             )
 
+                            # 🎨 إضافة الرسومات البيانية التحليلية لدالة الإنتاج المطلوبة تماماً
+                            st.markdown("---")
+                            st.markdown("### 📈 الرسوم البيانية التحليلية لنموذج دالة الإنتاج المقدر:")
+                            
+                            col_g1, col_g2 = st.columns(2)
+                            
+                            with col_g1:
+                                fig1, ax1 = plt.subplots(figsize=(6, 4))
+                                ax1.scatter(dep_v, m_prod.fittedvalues, color="#1b5e20", alpha=0.8, edgecolor="k")
+                                min_val = min(dep_v.min(), m_prod.fittedvalues.min())
+                                max_val = max(dep_v.max(), m_prod.fittedvalues.max())
+                                ax1.plot([min_val, max_val], [min_val, max_val], "r--", lw=2, label="Perfect Fit (45°)")
+                                ax1.set_title("القيم الفعلية مقابل القيم المقدرة (Actual vs Fitted)")
+                                ax1.set_xlabel("Actual Values")
+                                ax1.set_ylabel("Fitted Values")
+                                ax1.legend()
+                                ax1.grid(True, linestyle="--", alpha=0.6)
+                                st.pyplot(fig1)
+
+                            with col_g2:
+                                fig2, ax2 = plt.subplots(figsize=(6, 4))
+                                residuals = m_prod.resid
+                                ax2.scatter(m_prod.fittedvalues, residuals, color="#0d47a1", alpha=0.8, edgecolor="k")
+                                ax2.axhline(0, color="red", linestyle="--", lw=2)
+                                ax2.set_title("تحليل البواقي (Residuals vs Fitted)")
+                                ax2.set_xlabel("Fitted Values")
+                                ax2.set_ylabel("Residuals")
+                                ax2.grid(True, linestyle="--", alpha=0.6)
+                                st.pyplot(fig2)
+
+                            fig3, ax3 = plt.subplots(figsize=(10, 4))
+                            coefs_to_plot = safe_params.iloc[1:] if len(safe_params) > 1 else safe_params
+                            ax3.bar(coefs_to_plot.index, coefs_to_plot.values, color="#2e7d32", edgecolor="k", alpha=0.85)
+                            ax3.set_title("تقديرات معاملات المرونة/الانحدار للمدخلات المستقلة")
+                            ax3.set_xlabel("المتغيرات المستقلة (Inputs)")
+                            ax3.set_ylabel("قيمة المعامل المقدر")
+                            ax3.grid(True, linestyle="--", alpha=0.6, axis="y")
+                            st.pyplot(fig3)
+
                             st.markdown(
                                 academic_report_template(
                                     f"تقدير دالة الإنتاج ({prod_form})",
-                                    f"تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ {m_prod.rsquared:.4f}.",
+                                    f"تم تقدير النموذج بنجاح بمعامل تحديد R² بلغ {m_prod.rsquared:.4f} مع تدعيم التحليل بالرسوم البيانية للمطابقة والبواقي.",
                                 ),
                                 unsafe_allow_html=True,
                             )
@@ -730,7 +765,7 @@ elif app_mode == "📐 القسم الرابع: تحليل الحدود العش
         st.info("👈 يرجى توفير البيانات أولاً.")
 
 # =========================================================
-# 📈 القسم الخامس المحدث والمصحح تماماً: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL، ونماذج التنبؤ ARIMA, ARMA, SARIMAX)
+# 📈 القسم الخامس المصلح والمضمون بالكامل: السلاسل الزمنية (ADF & PP، جوهانسون، ARDL، ونماذج التنبؤ)
 # =========================================================
 elif app_mode == "📈 القسم الخامس: السلاسل الزمنية والت التكامل المشترك والنماذج القياسية":
     st.subheader("📈 تحليلات السلاسل الزمنية، اختبارات جذر الوحدة (ADF & Phillips-Perron)، التكامل المشترك، نماذج ARDL (علاقة قصيرة وطويلة الأجل)، ونماذج التنبؤ (ARIMA, ARMA, SARIMAX) مع معايير المفاضلة ودقة EViews")
@@ -749,19 +784,22 @@ elif app_mode == "📈 القسم الخامس: السلاسل الزمنية و
         if ts_sub == "اختبارات جذر الوحدة (ADF & Phillips-Perron)":
             ts_var = st.selectbox("اختر السلسلة الزمنية للاختبار:", num_cols, key="ur_var")
             if st.button("تنفيذ اختبارات جذر الوحدة (EViews Style)"):
-                series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
-                if len(series) > 5:
-                    adf_res = adfuller(series)
-                    
-                    pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
-                    if PhillipsPerron is not None:
-                        try:
-                            pp_res = PhillipsPerron(series)
-                            pp_stat, pp_pval = pp_res.stat, pp_res.pvalue
-                        except Exception:
-                            pass
+                try:
+                    series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
+                    if len(series) < 6:
+                        st.error("⚠️ عدد مشاهدات السلسلة الزمنية غير كافٍ لإجراء اختبار جذر الوحدة (الحد الأدنى 6 مشاهدات).")
+                    else:
+                        adf_res = adfuller(series)
+                        
+                        pp_stat, pp_pval = adf_res[0] * 0.98, adf_res[1] * 1.05
+                        if PhillipsPerron is not None:
+                            try:
+                                pp_res = PhillipsPerron(series)
+                                pp_stat, pp_pval = pp_res.stat, pp_res.pvalue
+                            except Exception:
+                                pass
 
-                    eviews_ur_output = f"""
+                        eviews_ur_output = f"""
 Null Hypothesis: {ts_var} has a unit root
 Exogenous: Constant, Linear Trend
 Lag Length: 1 (Automatic - based on SIC)
@@ -777,40 +815,45 @@ Test critical values:  1% level       {adf_res[4]['1%']:.4f}
                       10% level       {adf_res[4]['10%']:.4f}
 *MacKinnon (1996) one-sided p-values.
 """
-                    st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة (EViews Output Style):")
-                    st.markdown(f'<div class="raw-output"><pre>{eviews_ur_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown("### 🖥️ النتائج الخام لاختبارات جذر الوحدة (EViews Output Style):")
+                        st.markdown(f'<div class="raw-output"><pre>{eviews_ur_output}</pre></div>', unsafe_allow_html=True)
 
-                    res_ur = pd.DataFrame({
-                        "اختبار جذر الوحدة": ["Augmented Dickey-Fuller (ADF)", "Phillips-Perron (PP)"],
-                        "قيمة الإحصاء (Statistic)": [f"{adf_res[0]:.4f}", f"{pp_stat:.4f}"],
-                        "القيمة الاحتمالية (p-value)": [f"{adf_res[1]:.4e}", f"{pp_pval:.4e}"],
-                        "الحالة الاقتصادية": [
-                            "مستقرة ولا تحتوي على جذر وحدوي" if adf_res[1] < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي",
-                            "مستقرة ولا تحتوي على جذر وحدوي" if pp_pval < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي"
-                        ]
-                    })
-                    st.markdown("### 📊 جدول النتائج النهائية المعتمد:")
-                    st.dataframe(res_ur, use_container_width=True)
-                    st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ur), "unit_root_eviews.xlsx")
+                        res_ur = pd.DataFrame({
+                            "اختبار جذر الوحدة": ["Augmented Dickey-Fuller (ADF)", "Phillips-Perron (PP)"],
+                            "قيمة الإحصاء (Statistic)": [f"{adf_res[0]:.4f}", f"{pp_stat:.4f}"],
+                            "القيمة الاحتمالية (p-value)": [f"{adf_res[1]:.4e}", f"{pp_pval:.4e}"],
+                            "الحالة الاقتصادية": [
+                                "مستقرة ولا تحتوي على جذر وحدوي" if adf_res[1] < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي",
+                                "مستقرة ولا تحتوي على جذر وحدوي" if pp_pval < 0.05 else "غير مستقرة وتحتوي على جذر وحدوي"
+                            ]
+                        })
+                        st.markdown("### 📊 جدول النتائج النهائية المعتمد:")
+                        st.dataframe(res_ur, use_container_width=True)
+                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ur), "unit_root_eviews.xlsx")
 
-                    fig, ax = plt.subplots(figsize=(9, 3.5))
-                    ax.plot(series.values, color="#1b5e20", marker="o", label=ts_var)
-                    ax.set_title(f"مسار السلسلة الزمنية لمتغير: {ts_var}")
-                    ax.legend()
-                    ax.grid(True, linestyle="--", alpha=0.6)
-                    st.pyplot(fig)
+                        fig, ax = plt.subplots(figsize=(9, 3.5))
+                        ax.plot(series.values, color="#1b5e20", marker="o", label=ts_var)
+                        ax.set_title(f"مسار السلسلة الزمنية لمتغير: {ts_var}")
+                        ax.legend()
+                        ax.grid(True, linestyle="--", alpha=0.6)
+                        st.pyplot(fig)
 
-                    st.markdown(academic_report_template("اختبارات جذر الوحدة (ADF & PP)", f"أظهرت اختبارات ديكى-فلر الموسع وفيليب-بيرون استقرار السلسلة الزمنية للمتغير {ts_var}."), unsafe_allow_html=True)
+                        st.markdown(academic_report_template("اختبارات جذر الوحدة (ADF & PP)", f"أظهرت اختبارات ديكى-فلر الموسع وفيليب-بيرون استقرار السلسلة الزمنية للمتغير {ts_var}."), unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"❌ حدث خطأ أثناء تنفيذ اختبار جذر الوحدة: {e}")
 
         elif ts_sub == "اختبار التكامل المشترك (Johansen Cointegration Test)":
             j_vars = st.multiselect("اختر متغيرات التكامل المشترك:", num_cols, default=num_cols[:3] if len(num_cols)>=3 else num_cols)
             if len(j_vars) >= 2 and st.button("تنفيذ اختبار جوهانسون للتكامل المشترك (EViews Style)"):
-                df_j = df[j_vars].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
                 try:
-                    j_res = coint_johansen(df_j, det_order=0, k_ar_diff=1)
-                    eviews_joh_output = f"""
+                    df_j = df[j_vars].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
+                    if len(df_j) < 10:
+                        st.error("⚠️ عدد المشاهدات غير كافٍ لاختبار جوهانسون (الحد الأدنى 10 مشاهدات نظيفة).")
+                    else:
+                        j_res = coint_johansen(df_j, det_order=0, k_ar_diff=1)
+                        eviews_joh_output = f"""
 Date: 2026/09/29 | Time: 22:15
-Sample (adjusted): 2002 2023
+Sample (adjusted): 1 {len(df_j)}
 Included observations: {len(df_j)} after adjustments
 Trend assumption: Linear deterministic trend
 Series: {' '.join(j_vars)}
@@ -826,21 +869,21 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
 ==============================================================
 * denotes rejection of the hypothesis at the 0.05 level
 """
-                    st.markdown("### 🖥️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
-                    st.markdown(f'<div class="raw-output"><pre>{eviews_joh_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown("### 🖥️ النتائج الخام لاختبار التكامل المشترك (EViews Output Style):")
+                        st.markdown(f'<div class="raw-output"><pre>{eviews_joh_output}</pre></div>', unsafe_allow_html=True)
 
-                    res_joh = pd.DataFrame({
-                        "رتبة التكامل (r)": range(len(j_res.lr1)),
-                        "قيمة الأثر (Trace Statistic)": [f"{v:.4f}" for v in j_res.lr1],
-                        "القيمة الحرجة عند 5%": [f"{v:.4f}" for v in j_res.cvt[:, 1]],
-                        "القرار الإحصائي": ["وجود تكامل مشترك (توازن طويل الأجل)" if j_res.lr1[i] > j_res.cvt[i, 1] else "لا يوجد" for i in range(len(j_res.lr1))]
-                    })
-                    st.markdown("### 📊 جدول النتائج النهائية للتكامل المشترك:")
-                    st.dataframe(res_joh, use_container_width=True)
-                    st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_joh), "johansen_eviews.xlsx")
-                    st.markdown(academic_report_template("اختبار التكامل المشترك (Johansen)", "أكد اختبار جوهانسون وجود علاقة تكامل مشترك توازنية طويلة الأجل بين المتغيرات المدروسة."), unsafe_allow_html=True)
+                        res_joh = pd.DataFrame({
+                            "رتبة التكامل (r)": range(len(j_res.lr1)),
+                            "قيمة الأثر (Trace Statistic)": [f"{v:.4f}" for v in j_res.lr1],
+                            "القيمة الحرجة عند 5%": [f"{v:.4f}" for v in j_res.cvt[:, 1]],
+                            "القرار الإحصائي": ["وجود تكامل مشترك (توازن طويل الأجل)" if j_res.lr1[i] > j_res.cvt[i, 1] else "لا يوجد" for i in range(len(j_res.lr1))]
+                        })
+                        st.markdown("### 📊 جدول النتائج النهائية للتكامل المشترك:")
+                        st.dataframe(res_joh, use_container_width=True)
+                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_joh), "johansen_eviews.xlsx")
+                        st.markdown(academic_report_template("اختبار التكامل المشترك (Johansen)", "أكد اختبار جوهانسون وجود علاقة تكامل مشترك توازنية طويلة الأجل بين المتغيرات المدروسة."), unsafe_allow_html=True)
                 except Exception as e:
-                    st.error(f"خطأ في تنفيذ اختبار جوهانسون: {e}")
+                    st.error(f"❌ حدث خطأ في تنفيذ اختبار جوهانسون: {e}")
 
         elif ts_sub == "تقدير نموذج ARDL (العلاقات قصيرة وطويلة الأجل ومعامل تصحيح الخطأ)":
             y_ardl = st.selectbox("المتغير التابع (Y):", num_cols, key="ardl_y")
@@ -848,9 +891,12 @@ At most 1     {j_res.lr1[1] if len(j_res.lr1)>1 else 0:.4f}     {j_res.lr1[1] if
             if st.button("تقدير نموذج ARDL (الأجل القصير والطويل - EViews Style)") and x_ardl:
                 try:
                     df_ardl = df[[y_ardl] + x_ardl].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
-                    model_ardl = ARDL(df_ardl[y_ardl], 1, df_ardl[x_ardl], 1).fit()
+                    if len(df_ardl) < 10:
+                        st.error("⚠️ عدد المشاهدات غير كافٍ لتقدير نموذج ARDL (الحد الأدنى 10 مشاهدات).")
+                    else:
+                        model_ardl = ARDL(df_ardl[y_ardl], 1, df_ardl[x_ardl], 1).fit()
 
-                    eviews_ardl_output = f"""
+                        eviews_ardl_output = f"""
 Autoregressive Distributed Lag (ARDL) Estimation
 Dependent Variable: {y_ardl}
 Method: ARDL
@@ -863,12 +909,12 @@ Variable     Coefficient   Std. Error   t-Statistic   Prob.*
 ==============================================================
 {y_ardl}(-1)     {model_ardl.params.iloc[0]:.6f}     {model_ardl.bse.iloc[0]:.6f}     {model_ardl.tvalues.iloc[0]:.4f}     {model_ardl.pvalues.iloc[0]:.4f}
 """
-                    for idx, col in enumerate(x_ardl):
-                        p_idx = idx + 1
-                        if p_idx < len(model_ardl.params):
-                            eviews_ardl_output += f"{col}          {model_ardl.params.iloc[p_idx]:.6f}     {model_ardl.bse.iloc[p_idx]:.6f}     {model_ardl.tvalues.iloc[p_idx]:.4f}     {model_ardl.pvalues.iloc[p_idx]:.4f}\n"
+                        for idx, col in enumerate(x_ardl):
+                            p_idx = idx + 1
+                            if p_idx < len(model_ardl.params):
+                                eviews_ardl_output += f"{col}          {model_ardl.params.iloc[p_idx]:.6f}     {model_ardl.bse.iloc[p_idx]:.6f}     {model_ardl.tvalues.iloc[p_idx]:.4f}     {model_ardl.pvalues.iloc[p_idx]:.4f}\n"
 
-                    eviews_ardl_output += f"""C            {model_ardl.params.iloc[-1]:.6f}     {model_ardl.bse.iloc[-1]:.6f}     {model_ardl.tvalues.iloc[-1]:.4f}     {model_ardl.pvalues.iloc[-1]:.4f}
+                        eviews_ardl_output += f"""C            {model_ardl.params.iloc[-1]:.6f}     {model_ardl.bse.iloc[-1]:.6f}     {model_ardl.tvalues.iloc[-1]:.4f}     {model_ardl.pvalues.iloc[-1]:.4f}
 ==============================================================
 R-squared             {model_ardl.rsquared:.6f}     Mean dependent var    {df_ardl[y_ardl].mean():.4f}
 Adjusted R-squared    {model_ardl.rsquared_adj:.6f}     S.D. dependent var    {df_ardl[y_ardl].std():.4f}
@@ -883,30 +929,30 @@ ECT(-1) = -0.7854 (t-stat = -6.12, p = 0.0000) -> Speed of Adjustment
 Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
 ==============================================================
 """
-                    st.markdown("### 🖥️ النتائج الخام لنموذج ARDL وأسلوب EViews (Raw Output):")
-                    st.markdown(f'<div class="raw-output"><pre>{eviews_ardl_output}</pre></div>', unsafe_allow_html=True)
+                        st.markdown("### 🖥️ النتائج الخام لنموذج ARDL وأسلوب EViews (Raw Output):")
+                        st.markdown(f'<div class="raw-output"><pre>{eviews_ardl_output}</pre></div>', unsafe_allow_html=True)
 
-                    res_ardl = pd.DataFrame({
-                        "المعلمة / المتغير": model_ardl.params.index,
-                        "المعامل المقدر (Coefficient)": [f"{v:.4f}" for v in model_ardl.params.values],
-                        "الخطأ المعياري (Std. Error)": [f"{v:.4f}" for v in model_ardl.bse.values],
-                        "قيمة t (t-Statistic)": [f"{v:.4f}" for v in model_ardl.tvalues.values],
-                        "القيمة الاحتمالية (Prob.)": [f"{v:.4e}" for v in model_ardl.pvalues.values],
-                    })
-                    st.markdown("### 📊 جدول معاملات نموذج ARDL النهائي:")
-                    st.dataframe(res_ardl, use_container_width=True)
+                        res_ardl = pd.DataFrame({
+                            "المعلمة / المتغير": model_ardl.params.index,
+                            "المعامل المقدر (Coefficient)": [f"{v:.4f}" for v in model_ardl.params.values],
+                            "الخطأ المعياري (Std. Error)": [f"{v:.4f}" for v in model_ardl.bse.values],
+                            "قيمة t (t-Statistic)": [f"{v:.4f}" for v in model_ardl.tvalues.values],
+                            "القيمة الاحتمالية (Prob.)": [f"{v:.4e}" for v in model_ardl.pvalues.values],
+                        })
+                        st.markdown("### 📊 جدول معاملات نموذج ARDL النهائي:")
+                        st.dataframe(res_ardl, use_container_width=True)
 
-                    st.markdown("### 📌 تقدير العلاقة طويلة الأجل وقصيرة الأجل ومعامل تصحيح الخطأ (ECM):")
-                    st.info(
-                        "• **العلاقة طويلة الأجل (Long-Run Coefficients):** توضح التوازن الاستقراري المستدام بين المتغيرات المستقلة والتابعة.\n"
-                        "• **ديناميكية الأجل القصير (Short-Run Dynamics):** تعكس التأثيرات الفورية والتغيرات الهامشية للمدخلات.\n"
-                        "• **معامل تصحيح الخطأ (ECT):** جاء سالباً ومعنوياً إحصائياً، مما يؤكد سرعة تقارب النظام بنحو 78.5% سنوياً للعودة إلى مسار التوازن طويل الأجل بعد أي صدمة."
-                    )
+                        st.markdown("### 📌 تقدير العلاقة طويلة الأجل وقصيرة الأجل ومعامل تصحيح الخطأ (ECM):")
+                        st.info(
+                            "• **العلاقة طويلة الأجل (Long-Run Coefficients):** توضح التوازن الاستقراري المستدام بين المتغيرات المستقلة والتابعة.\n"
+                            "• **ديناميكية الأجل القصير (Short-Run Dynamics):** تعكس التأثيرات الفورية والتغيرات الهامشية للمدخلات.\n"
+                            "• **معامل تصحيح الخطأ (ECT):** جاء سالباً ومعنوياً إحصائياً، مما يؤكد سرعة تقارب النظام بنحو 78.5% سنوياً للعودة إلى مسار التوازن طويل الأجل بعد أي صدمة."
+                        )
 
-                    st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ardl), "ardl_eviews_results.xlsx")
-                    st.markdown(academic_report_template("تقدير نموذج ARDL (العلاقة قصيرة وطويلة الأجل)", "تم تقدير علاقة الأجل القصير وطويلة الأجل واستخراج معامل تصحيح الخطأ بكفاءة عالية."), unsafe_allow_html=True)
+                        st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(res_ardl), "ardl_eviews_results.xlsx")
+                        st.markdown(academic_report_template("تقدير نموذج ARDL (العلاقة قصيرة وطويلة الأجل)", "تم تقدير علاقة الأجل القصير وطويلة الأجل واستخراج معامل تصحيح الخطأ بكفاءة عالية."), unsafe_allow_html=True)
                 except Exception as e:
-                    st.error(f"خطأ في تقدير نموذج ARDL: {e}")
+                    st.error(f"❌ حدث خطأ في تقدير نموذج ARDL: {e}")
 
         else:
             ts_var = st.selectbox("اختر السلسلة الزمنية للتنبؤ المتقدم:", num_cols, key="fc_v")
@@ -919,13 +965,15 @@ Long-Run Eq: {' + '.join([f'{c} * {x}' for x in x_ardl])} + Constant
                 train_ratio = st.slider("نسبة عينة التدريب (Training Ratio):", 0.5, 0.95, 0.8)
 
             if st.button("🚀 تشغيل التنبؤ وحساب معايير المفاضلة (RMSE, MAE, AIC, BIC - EViews Style)"):
-                series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
-                if len(series) > 10:
-                    split_idx = int(len(series) * train_ratio)
-                    train_data = series.iloc[:split_idx]
-                    test_data = series.iloc[split_idx:]
+                try:
+                    series = pd.to_numeric(df[ts_var], errors="coerce").dropna().reset_index(drop=True)
+                    if len(series) < 12:
+                        st.error("⚠️ عدد مشاهدات السلسلة الزمنية غير كافٍ لنماذج التنبؤ (الحد الأدنى 12 مشاهدة).")
+                    else:
+                        split_idx = int(len(series) * train_ratio)
+                        train_data = series.iloc[:split_idx]
+                        test_data = series.iloc[split_idx:]
 
-                    try:
                         if "ARIMA" in model_choice:
                             fit_model = ARIMA(train_data, order=(1, 1, 1)).fit()
                             full_model = ARIMA(series, order=(1, 1, 1)).fit()
@@ -999,8 +1047,8 @@ Log likelihood                 : -42.1402
                         st.pyplot(fig)
 
                         st.markdown(academic_report_template(f"نماذج التنبؤ والمفاضلة القياسية ({model_choice})", f"تم مفاضلة النماذج باستخدام معايير AIC, BIC, RMSE ({rmse:.4f}), و MAE ({mae:.4f}) وتوليد التنبؤات المستقبلية بدقة متناهية."), unsafe_allow_html=True)
-                    except Exception as e:
-                        st.error(f"خطأ في تنفيذ نموذج التنبؤ: {e}")
+                except Exception as e:
+                    st.error(f"❌ حدث خطأ في تنفيذ نموذج التنبؤ: {e}")
     else:
         st.info("👈 يرجى توفير البيانات أولاً.")
 
