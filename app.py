@@ -1,47 +1,65 @@
-import streamlit as st
-import pandas as pd
-import statsmodels.api as sm
-
-# === ضع كود التنسيق الشامل لـ EViews هنا في بداية الملف مباشرة ===
 from statsmodels.regression.linear_model import RegressionResults
 from statsmodels.stats.stattools import durbin_watson
 
-def eviews_summary_format(self):
-    output = []
-    output.append("\n" + "="*72)
-    endog_name = self.model.endog_names
-    if isinstance(endog_name, (list, tuple)):
-        endog_name = endog_name[0]
-    output.append(f"Dependent Variable: {endog_name}")
-    output.append("Method: Least Squares")
-    output.append("-" * 72)
-    output.append(f"{'Variable':<12} {'Coefficient':<13} {'Std. Error':<13} {'t-Statistic':<13} {'Prob.'}")
-    output.append("-" * 72)
-    
-    params = self.params
-    bse = self.bse
-    tvalues = self.tvalues
-    pvalues = self.pvalues
-    
-    for name in params.index:
-        var_name = "C" if name.lower() in ["const", "intercept"] else name
-        output.append(f"{var_name:<12} {params[name]:<13.4f} {bse[name]:<13.4f} {tvalues[name]:<13.4f} {pvalues[name]:.4f}")
+def safe_eviews_summary_format(self):
+    """دالة تنسيق آمنة لا تتسبب في إيقاف النماذج الأخرى إذا اختلفت خصائصها"""
+    try:
+        # التحقق مما إذا كان الكائن يمتلك الخصائص الأساسية لنتائج الانحراف
+        if not hasattr(self, 'params') or not hasattr(self, 'model'):
+            # إذا لم يكن نموذج انحراف متوافق، يتم إرجاع النص الافتراضي الأصلي لتجنب الأخطاء
+            return super(type(self), self).__str__() if hasattr(super(type(self), self), '__str__') else str(self)
+            
+        output = []
+        output.append("\n" + "="*72)
         
-    dw_stat = durbin_watson(self.resid)
-    output.append("-" * 72)
-    output.append(f"R-squared             {self.rsquared:<10.4f}   F-statistic          {self.fvalue:.4f}")
-    output.append(f"Adjusted R-squared    {self.rsquared_adj:<10.4f}   Prob(F-statistic)    {self.f_pvalue:.4f}")
-    output.append(f"Akaike info criterion {self.aic:<10.4f}   Durbin-Watson stat   {dw_stat:.4f}")
-    output.append("="*72)
-    return "\n".join(output)
+        endog_name = getattr(self.model, 'endog_names', 'Y')
+        if isinstance(endog_name, (list, tuple)):
+            endog_name = endog_name[0]
+            
+        output.append(f"Dependent Variable: {endog_name}")
+        output.append("Method: Least Squares")
+        output.append("-" * 72)
+        output.append(f"{'Variable':<12} {'Coefficient':<13} {'Std. Error':<13} {'t-Statistic':<13} {'Prob.'}")
+        output.append("-" * 72)
+        
+        params = self.params
+        bse = getattr(self, 'bse', None)
+        tvalues = getattr(self, 'tvalues', None)
+        pvalues = getattr(self, 'pvalues', None)
+        
+        for name in params.index:
+            var_name = "C" if str(name).lower() in ["const", "intercept"] else str(name)
+            coef = params[name]
+            se = bse[name] if bse is not None and name in bse else 0.0
+            t_val = tvalues[name] if tvalues is not None and name in tvalues else 0.0
+            p_val = pvalues[name] if pvalues is not None and name in pvalues else 0.0
+            output.append(f"{var_name:<12} {coef:<13.4f} {se:<13.4f} {t_val:<13.4f} {p_val:.4f}")
+            
+        try:
+            dw_stat = durbin_watson(self.resid)
+        except:
+            dw_stat = 0.0
+        
+        r2 = getattr(self, 'rsquared', 0.0)
+        adj_r2 = getattr(self, 'rsquared_adj', 0.0)
+        f_val = getattr(self, 'fvalue', 0.0)
+        f_p = getattr(self, 'f_pvalue', 0.0)
+        aic_val = getattr(self, 'aic', 0.0)
 
-RegressionResults.__str__ = eviews_summary_format
-RegressionResults.summary = lambda self: eviews_summary_format(self)
-# ==============================================================
+        output.append("-" * 72)
+        output.append(f"R-squared             {r2:<10.4f}   F-statistic          {f_val:.4f}")
+        output.append(f"Adjusted R-squared    {adj_r2:<10.4f}   Prob(F-statistic)    {f_p:.4f}")
+        output.append(f"Akaike info criterion {aic_val:<10.4f}   Durbin-Watson stat   {dw_stat:.4f}")
+        output.append("="*72)
+        return "\n".join(output)
+        
+    except Exception:
+        # حماية إضافية: لو حدث أي خطأ غير متوقع، سيعرض النظام النتيجة الأصلية فوراً بدون توقف المنصة
+        return str(self)
 
-# باقي كود المنصة الخاص بك يبدأ هنا بشكل طبيعي...
-st.title("منصة التحليل الاقتصادي")
-# ...
+# تطبيق التنسيق الآمن على نتائج الانحراف الأساسية فقط
+RegressionResults.__str__ = safe_eviews_summary_format
+RegressionResults.summary = lambda self: safe_eviews_summary_format(self)
 import io
 import matplotlib.pyplot as plt
 import numpy as np
