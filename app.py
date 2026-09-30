@@ -1334,7 +1334,7 @@ elif app_mode == "💬 القسم التاسع: استشارات الخبير ا
             )
         else:
             st.warning("يرجى كتابة سؤال أو استفسار أولاً.")
-           st.markdown("---")
+st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: gray; font-size: 12px;'>"
     "© 2026 جميع الحقوق محفوظة لـ [اسم المنصة أو اسمك]. | "
