@@ -1334,40 +1334,4 @@ elif app_mode == "💬 القسم التاسع: استشارات الخبير ا
             )
         else:
             st.warning("يرجى كتابة سؤال أو استفسار أولاً.")
-            from statsmodels.stats.stattools import durbin_watson
-
-def print_eviews_style(results):
-    print("\n" + "="*72)
-    
-    # التعامل مع اسم المتغير التابع سواء كان نصاً أو قائمة
-    endog_name = results.model.endog_names
-    if isinstance(endog_name, (list, tuple)):
-        endog_name = endog_name[0]
-        
-    print(f"Dependent Variable: {endog_name}")
-    print("Method: Least Squares")
-    print("-" * 72)
-    print(f"{'Variable':<12} {'Coefficient':<13} {'Std. Error':<13} {'t-Statistic':<13} {'Prob.'}")
-    print("-" * 72)
-    
-    params = results.params
-    bse = results.bse
-    tvalues = results.tvalues
-    pvalues = results.pvalues
-    
-    for name in params.index:
-        # استبدال const أو intercept بحرف C تماماً مثل EViews
-        var_name = "C" if name.lower() in ["const", "intercept"] else name
-        print(f"{var_name:<12} {params[name]:<13.4f} {bse[name]:<13.4f} {tvalues[name]:<13.4f} {pvalues[name]:.4f}")
-        
-    # حساب إحصائية Durbin-Watson بدقة من البواقي
-    dw_stat = durbin_watson(results.resid)
-    
-    print("-" * 72)
-    print(f"R-squared             {results.rsquared:<10.4f}   F-statistic          {results.fvalue:.4f}")
-    print(f"Adjusted R-squared    {results.rsquared_adj:<10.4f}   Prob(F-statistic)    {results.f_pvalue:.4f}")
-    print(f"Akaike info criterion {results.aic:<10.4f}   Durbin-Watson stat   {dw_stat:.4f}")
-    print("="*72)
-
-# ضع هذا السطر في نهاية الكود لديك مع التأكد من أن متغير النتائج لديك اسمه results:
-print_eviews_style(results)
+            
