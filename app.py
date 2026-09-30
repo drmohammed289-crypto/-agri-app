@@ -1,3 +1,47 @@
+import streamlit as st
+import pandas as pd
+import statsmodels.api as sm
+
+# === ضع كود التنسيق الشامل لـ EViews هنا في بداية الملف مباشرة ===
+from statsmodels.regression.linear_model import RegressionResults
+from statsmodels.stats.stattools import durbin_watson
+
+def eviews_summary_format(self):
+    output = []
+    output.append("\n" + "="*72)
+    endog_name = self.model.endog_names
+    if isinstance(endog_name, (list, tuple)):
+        endog_name = endog_name[0]
+    output.append(f"Dependent Variable: {endog_name}")
+    output.append("Method: Least Squares")
+    output.append("-" * 72)
+    output.append(f"{'Variable':<12} {'Coefficient':<13} {'Std. Error':<13} {'t-Statistic':<13} {'Prob.'}")
+    output.append("-" * 72)
+    
+    params = self.params
+    bse = self.bse
+    tvalues = self.tvalues
+    pvalues = self.pvalues
+    
+    for name in params.index:
+        var_name = "C" if name.lower() in ["const", "intercept"] else name
+        output.append(f"{var_name:<12} {params[name]:<13.4f} {bse[name]:<13.4f} {tvalues[name]:<13.4f} {pvalues[name]:.4f}")
+        
+    dw_stat = durbin_watson(self.resid)
+    output.append("-" * 72)
+    output.append(f"R-squared             {self.rsquared:<10.4f}   F-statistic          {self.fvalue:.4f}")
+    output.append(f"Adjusted R-squared    {self.rsquared_adj:<10.4f}   Prob(F-statistic)    {self.f_pvalue:.4f}")
+    output.append(f"Akaike info criterion {self.aic:<10.4f}   Durbin-Watson stat   {dw_stat:.4f}")
+    output.append("="*72)
+    return "\n".join(output)
+
+RegressionResults.__str__ = eviews_summary_format
+RegressionResults.summary = lambda self: eviews_summary_format(self)
+# ==============================================================
+
+# باقي كود المنصة الخاص بك يبدأ هنا بشكل طبيعي...
+st.title("منصة التحليل الاقتصادي")
+# ...
 import io
 import matplotlib.pyplot as plt
 import numpy as np
