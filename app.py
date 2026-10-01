@@ -321,55 +321,57 @@ app_mode = st.sidebar.selectbox(
 
 if df is not None:
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-
-    # =========================================================
-    # 📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق
-    # =========================================================
-    if app_mode == "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق":
-        st.subheader("📊 التحليلات الإحصائية، اختبارات الفروق، ومعاملات الارتباط")
+# =========================================================
+# 📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق والانحدار
+# =========================================================
+elif app_mode == "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق والانحدار":
+    st.subheader("📊 التحليلات الإحصائية، الفروق، الارتباط، وتحليل الانحدار")
+    if df is not None:
+        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         sub1 = st.selectbox(
             "اختر الأداة التحليلية:",
             [
-                "اختبارات الفروق (T-Test بنوعيها، One-Way & Two-Way ANOVA)",
+                "اختبارات الفروق (T-Test بنوعيها و ANOVA)",
                 "معاملات الارتباط (بيرسون وسبيرمان)",
+                "تحليل الانحدار وتقدير الاتجاه العام",
             ],
         )
 
-        if sub1 == "اختبارات الفروق (T-Test بنوعيها، One-Way & Two-Way ANOVA)":
+        if sub1 == "اختبارات الفروق (T-Test بنوعيها و ANOVA)":
             t_choice = st.selectbox(
                 "اختر الاختبار الإحصائي:",
                 [
                     "اختبار عينة واحدة (One-Sample T-Test)",
                     "اختبار عينات مستقلة (Independent T-Test)",
                     "اختبار عينات مرتبطة (Paired T-Test)",
-                    "تحليل التباين أحادي الاتجاه (One-Way ANOVA)",
-                    "تحليل التباين ثنائي الاتجاه (Two-Way ANOVA)",
+                    "تحليل التباين (One-Way ANOVA)",
                 ],
             )
-            
             if "One-Sample" in t_choice:
                 v_one = st.selectbox("اختر المتغير:", num_cols)
                 mu_val = st.number_input("القيمة المستهدفة (Mu):", value=100.0)
                 if st.button("تنفيذ الاختبار"):
                     s = pd.to_numeric(df[v_one], errors="coerce").dropna()
                     ts, pv = ttest_1samp(s, mu_val)
-                    sig_status = "معنوي إحصائياً (Significant at 5%)" if pv < 0.05 else "غير معنوي (Not Significant)"
 
                     st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                     st.markdown(
-                        f'<div class="raw-output"><pre>One-Sample T-Test Results\n-------------------------\nVariable: {v_one}\nSample Mean: {s.mean():.4f}\nTarget Mu: {mu_val}\nt-statistic: {ts:.4f}\np-value: {pv:.6e}\nSignificance: {sig_status}</pre></div>',
+                        f'<div class="raw-output"><pre>One-Sample T-Test Results\n-------------------------\nVariable: {v_one}\nSample Mean: {s.mean():.4f}\nTarget Mu: {mu_val}\nt-statistic: {ts:.4f}\np-value: {pv:.6e}\nDegrees of Freedom: {len(s)-1}\nSignificance: {"Significant at 5%" if pv<0.05 else "Not Significant"}</pre></div>',
                         unsafe_allow_html=True,
                     )
 
                     res = pd.DataFrame({
                         "المتغير": [v_one],
                         "قيمة t": [f"{ts:.4f}"],
-                        "معنوية الاختبار": [sig_status],
                         "p-value": [f"{pv:.4e}"],
                     })
                     st.markdown("### 📊 النتائج النهائية:")
                     st.dataframe(res, use_container_width=True)
-                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res), "one_sample_ttest.xlsx")
+                    st.download_button(
+                        "📥 تحميل (Excel)",
+                        convert_df_to_excel(res),
+                        "one_sample_ttest.xlsx",
+                    )
 
                     fig, ax = plt.subplots(figsize=(6, 3))
                     ax.hist(s, bins=10, color="#2e7d32", edgecolor="black", alpha=0.7)
@@ -377,115 +379,144 @@ if df is not None:
                     ax.legend()
                     st.pyplot(fig)
 
+                    st.markdown(
+                        academic_report_template(
+                            "اختبار t لعينة واحدة",
+                            f"أسفر اختبار t للمتغير {v_one} عن قيمة إحصائية بلغت {ts:.4f} (p-value = {pv:.4e}).",
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
             elif "Independent" in t_choice:
                 c1, c2 = st.columns(2)
                 with c1:
                     va = st.selectbox("المتغير أ:", num_cols, key="ia")
                 with c2:
-                    vb = st.selectbox("المتغير ب:", [c for c in num_cols if c != va], key="ib")
+                    vb = st.selectbox(
+                        "المتغير ب:", [c for c in num_cols if c != va], key="ib"
+                    )
                 if st.button("تنفيذ الاختبار"):
                     sa = pd.to_numeric(df[va], errors="coerce").dropna()
                     sb = pd.to_numeric(df[vb], errors="coerce").dropna()
                     ts, pv = ttest_ind(sa, sb)
-                    sig_status = "معنوي إحصائياً (Significant)" if pv < 0.05 else "غير معنوي (Not Significant)"
 
                     st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                     st.markdown(
-                        f'<div class="raw-output"><pre>Independent Samples T-Test Results\n----------------------------------\nGroup 1 ({va}) Mean: {sa.mean():.4f}\nGroup 2 ({vb}) Mean: {sb.mean():.4f}\nt-statistic: {ts:.4f}\np-value: {pv:.6e}\nSignificance: {sig_status}</pre></div>',
+                        f'<div class="raw-output"><pre>Independent Samples T-Test Results\n----------------------------------\nGroup 1 ({va}) Mean: {sa.mean():.4f}\nGroup 2 ({vb}) Mean: {sb.mean():.4f}\nt-statistic: {ts:.4f}\np-value: {pv:.6e}\nSignificance: {"Significant" if pv<0.05 else "Not Significant"}</pre></div>',
                         unsafe_allow_html=True,
                     )
 
                     res = pd.DataFrame({
                         "المقارنة": [f"{va} مقابل {vb}"],
                         "قيمة t": [f"{ts:.4f}"],
-                        "معنوية الاختبار": [sig_status],
                         "p-value": [f"{pv:.4e}"],
                     })
                     st.markdown("### 📊 النتائج النهائية:")
                     st.dataframe(res, use_container_width=True)
-                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res), "ind_ttest.xlsx")
+                    st.download_button(
+                        "📥 تحميل (Excel)",
+                        convert_df_to_excel(res),
+                        "ind_ttest.xlsx",
+                    )
+
+                    fig, ax = plt.subplots(figsize=(6, 3))
+                    ax.boxplot([sa, sb], labels=[va, vb])
+                    st.pyplot(fig)
+
+                    st.markdown(
+                        academic_report_template(
+                            "اختبار t للعينات المستقلة",
+                            f"أظهر اختبار تباين العينات المستقلة قيمة {ts:.4f}.",
+                        ),
+                        unsafe_allow_html=True,
+                    )
 
             elif "Paired" in t_choice:
                 c1, c2 = st.columns(2)
                 with c1:
                     pa = st.selectbox("الفترة الأولى:", num_cols, key="pa")
                 with c2:
-                    pb = st.selectbox("الفترة الثانية:", [c for c in num_cols if c != pa], key="pb")
+                    pb = st.selectbox(
+                        "الفترة الثانية:", [c for c in num_cols if c != pa], key="pb"
+                    )
                 if st.button("تنفيذ الاختبار"):
                     dp = df[[pa, pb]].apply(pd.to_numeric, errors="coerce").dropna()
                     tp, pp = ttest_rel(dp[pa], dp[pb])
-                    sig_status = "معنوي إحصائياً (Significant)" if pp < 0.05 else "غير معنوي (Not Significant)"
 
                     st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                     st.markdown(
-                        f'<div class="raw-output"><pre>Paired Samples T-Test Results\n-----------------------------\nPairs: {pa} & {pb}\nMean Difference: {(dp[pa]-dp[pb]).mean():.4f}\nt-statistic: {tp:.4f}\np-value: {pp:.6e}\nSignificance: {sig_status}</pre></div>',
+                        f'<div class="raw-output"><pre>Paired Samples T-Test Results\n-----------------------------\nPairs: {pa} & {pb}\nMean Difference: {(dp[pa]-dp[pb]).mean():.4f}\nt-statistic: {tp:.4f}\np-value: {pp:.6e}</pre></div>',
                         unsafe_allow_html=True,
                     )
 
                     res = pd.DataFrame({
                         "المقارنة": [f"{pa} و {pb}"],
                         "قيمة t": [f"{tp:.4f}"],
-                        "معنوية الاختبار": [sig_status],
                         "p-value": [f"{pp:.4e}"],
                     })
                     st.markdown("### 📊 النتائج النهائية:")
                     st.dataframe(res, use_container_width=True)
-                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res), "paired_ttest.xlsx")
+                    st.download_button(
+                        "📥 تحميل (Excel)",
+                        convert_df_to_excel(res),
+                        "paired_ttest.xlsx",
+                    )
 
-            elif "One-Way ANOVA" in t_choice:
+                    fig, ax = plt.subplots(figsize=(8, 3))
+                    ax.plot(dp[pa].values, label=pa, marker="o")
+                    ax.plot(dp[pb].values, label=pb, marker="x")
+                    ax.legend()
+                    st.pyplot(fig)
+
+                    st.markdown(
+                        academic_report_template(
+                            "اختبار t للعينات المرتبطة",
+                            f"بلغت قيمة اختبار t الزوجي {tp:.4f} (p = {pp:.4e}).",
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
+            else:
                 dep_an = st.selectbox("متغير الاستجابة:", num_cols)
-                group_col = st.selectbox("متغير التصنيف (المجموعات):", df.columns.tolist())
-                
-                if st.button("تنفيذ One-Way ANOVA"):
-                    groups = [g.dropna().values for _, g in df.groupby(group_col)[dep_an] if len(g) > 1]
+                if st.button("تنفيذ ANOVA"):
+                    groups = [
+                        g.dropna().values
+                        for _, g in df.groupby(num_cols[0])[dep_an]
+                        if len(g) > 1
+                    ]
                     if len(groups) >= 2:
                         fs, ps = f_oneway(*groups)
-                        sig_status = "معنوي إحصائياً (Significant)" if ps < 0.05 else "غير معنوي (Not Significant)"
 
                         st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
                         st.markdown(
-                            f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {sig_status}</pre></div>',
+                            f'<div class="raw-output"><pre>One-Way ANOVA Results\n---------------------\nF-statistic: {fs:.4f}\np-value: {ps:.6e}\nSignificance: {"Significant" if ps<0.05 else "Not Significant"}</pre></div>',
                             unsafe_allow_html=True,
                         )
 
                         res = pd.DataFrame({
                             "ANOVA": ["One-Way"],
                             "قيمة F": [f"{fs:.4f}"],
-                            "معنوية الاختبار": [sig_status],
-                            "p-value": [f"{ps:.4e}"],
+                            "p": [f"{ps:.4e}"],
                         })
                         st.markdown("### 📊 النتائج النهائية:")
                         st.dataframe(res, use_container_width=True)
-                        st.download_button("📥 تحميل (Excel)", convert_df_to_excel(res), "anova_one.xlsx")
+                        st.download_button(
+                            "📥 تحميل (Excel)",
+                            convert_df_to_excel(res),
+                            "anova.xlsx",
+                        )
+                        st.markdown(
+                            academic_report_template(
+                                "تحليل التباين ANOVA",
+                                f"بلغت قيمة F في تحليل التباين {fs:.4f}.",
+                            ),
+                            unsafe_allow_html=True,
+                        )
 
-            else:  # Two-Way ANOVA
-                st.markdown("#### إعدادات تحليل التباين ثنائي الاتجاه (Two-Way ANOVA)")
-                dep_an = st.selectbox("متغير الاستجابة (التابع):", num_cols, key="two_y")
-                all_cols = df.columns.tolist()
-                factor1 = st.selectbox("المتغير المستقل الأول (Factor A):", all_cols, key="f1")
-                factor2 = st.selectbox("المتغير المستقل الثاني (Factor B):", [c for c in all_cols if c != factor1], key="f2")
-
-                if st.button("تنفيذ Two-Way ANOVA"):
-                    formula = f"Q('{dep_an}') ~ C(Q('{factor1}')) + C(Q('{factor2}')) + C(Q('{factor1}')):C(Q('{factor2}'))"
-                    model = ols(formula, data=df).fit()
-                    anova_table = sm.stats.anova_lm(model, typ=2)
-                    
-                    anova_table["معنوية الاختبار"] = anova_table["PR(>F)"].apply(
-                        lambda p: "معنوي (Significant)" if p < 0.05 else "غير معنوي (Not Significant)"
-                    )
-
-                    st.markdown("### 🖥️ النتائج الخام للاختبار (Raw Output):")
-                    st.markdown(
-                        f'<div class="raw-output"><pre>{anova_table.to_string()}</pre></div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    st.markdown("### 📊 النتائج النهائية:")
-                    st.dataframe(anova_table, use_container_width=True)
-                    st.download_button("📥 تحميل (Excel)", convert_df_to_excel(anova_table.reset_index()), "anova_two_way.xlsx")
-
-        else:  # معاملات الارتباط
-            c_vars = st.multiselect("اختر المتغيرات:", num_cols, default=num_cols[:min(3, len(num_cols))])
+        elif sub1 == "معاملات الارتباط (بيرسون وسبيرمان)":
+            c_vars = st.multiselect(
+                "اختر المتغيرات:", num_cols, default=num_cols[:3]
+            )
             if len(c_vars) >= 2 and st.button("حساب الارتباط"):
                 df_c = df[c_vars].apply(pd.to_numeric, errors="coerce").dropna()
                 pr = df_c.corr(method="pearson")
@@ -502,106 +533,34 @@ if df is not None:
                 st.dataframe(pr, use_container_width=True)
                 st.markdown("<b>سبيرمان:</b>", unsafe_allow_html=True)
                 st.dataframe(sp, use_container_width=True)
-                st.download_button("📥 تحميل (Excel)", convert_df_to_excel(pr), "correlation.xlsx")
+                st.download_button(
+                    "📥 تحميل (Excel)",
+                    convert_df_to_excel(pr),
+                    "correlation.xlsx",
+                )
 
-
-    # =========================================================
-    # 📈 القسم الثاني: تحليل الانحدار والاتجاه العام (مستقل تماماً)
-    # =========================================================
-    elif app_mode == "📈 القسم الثاني: تحليل الانحدار والاتجاه العام":
-        st.subheader("📈 تحليل الانحدار ونماذج الاتجاه العام (Trend Analysis)")
-        reg_sub = st.selectbox(
-            "اختر الأداة التحليلية:",
-            [
-                "تحليل الاتجاه العام (Trend Analysis - زمني تلقائي)",
-                "تحليل الانحدار الخطي المتعدد (Multiple Regression)",
-            ],
-        )
-
-        if reg_sub == "تحليل الاتجاه العام (Trend Analysis - زمني تلقائي)":
-            y_trend = st.selectbox("اختر المتغير المراد تحليل اتجاهه:", num_cols)
-            trend_model_type = st.selectbox(
-                "اختر نموذج الاتجاه العام:",
-                [
-                    "النموذج الخطي (Linear Trend: Y = a + b*t)",
-                    "النموذج الأسي (Exponential Trend: Y = a * e^(b*t))",
-                    "نموذج النمو (Growth Model: ln(Y) = a + b*t)",
-                ],
-            )
-
-            if st.button("تنفيذ وتحليل الاتجاه العام"):
-                # توليد متغير الزمن (t) تلقائياً بناءً على ترتيب الصفوف بدءاً من 1
-                clean_data = pd.DataFrame({
-                    "Y": pd.to_numeric(df[y_trend], errors="coerce")
-                }).dropna()
-                
-                clean_data["t"] = np.arange(1, len(clean_data) + 1)
-                
-                if "الخطي" in trend_model_type:
-                    X = sm.add_constant(clean_data["t"])
-                    y_val = clean_data["Y"]
-                    model = sm.OLS(y_val, X).fit()
-                    clean_data["Fitted"] = model.fittedvalues
-                    eq_str = f"Y = {model.params[0]:.4f} + {model.params[1]:.4f} * t"
-                
-                elif "الأسي" in trend_model_type:
-                    valid_idx = clean_data["Y"] > 0
-                    y_log = np.log(clean_data.loc[valid_idx, "Y"])
-                    t_val = sm.add_constant(clean_data.loc[valid_idx, "t"])
-                    model = sm.OLS(y_log, t_val).fit()
-                    clean_data["Fitted"] = np.nan
-                    clean_data.loc[valid_idx, "Fitted"] = np.exp(model.fittedvalues)
-                    eq_str = f"Y = exp({model.params[0]:.4f} + {model.params[1]:.4f} * t)"
-                
-                else:  # نموذج النمو
-                    valid_idx = clean_data["Y"] > 0
-                    y_log = np.log(clean_data.loc[valid_idx, "Y"])
-                    t_val = sm.add_constant(clean_data.loc[valid_idx, "t"])
-                    model = sm.OLS(y_log, t_val).fit()
-                    clean_data["Fitted"] = np.nan
-                    clean_data.loc[valid_idx, "Fitted"] = np.exp(model.fittedvalues)
-                    eq_str = f"ln(Y) = {model.params[0]:.4f} + {model.params[1]:.4f} * t"
-
-                st.markdown("### 📐 الصيغة الرياضية للنموذج المقدر:")
-                st.info(f"الصيغة الرياضية: `{eq_str}`")
-
-                st.markdown("### 🖥️ النتائج الخام لنموذج الاتجاه العام (Raw Output):")
                 st.markdown(
-                    f'<div class="raw-output"><pre>{model.summary().as_text()}</pre></div>',
+                    academic_report_template(
+                        "معاملات الارتباط",
+                        "أوضحت مصفوفات الارتباط الترابط الخطي والرتبي بين المتغيرات.",
+                    ),
                     unsafe_allow_html=True,
                 )
 
-                reg_res = pd.DataFrame({
-                    "المعلمة": model.params.index,
-                    "المعامل": [f"{v:.4f}" for v in model.params.values],
-                    "t-stat": [f"{v:.4f}" for v in model.tvalues.values],
-                    "معنوية المعامل": [("معنوي" if p < 0.05 else "غير معنوي") for p in model.pvalues.values],
-                    "p-value": [f"{v:.4e}" for v in model.pvalues.values],
-                })
-                
-                st.markdown("### 📊 جدول النتائج النهائية الملخص:")
-                st.dataframe(reg_res, use_container_width=True)
-                st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(reg_res), "trend_analysis.xlsx")
-
-                fig, ax = plt.subplots(figsize=(8, 4))
-                ax.plot(clean_data["t"], clean_data["Y"], label="القيم الفعلية (Actual)", marker="o", color="#1b5e20", alpha=0.7)
-                ax.plot(clean_data["t"], clean_data["Fitted"], label="خط الاتجاه المقدر (Trend)", color="red", lw=2)
-                ax.set_xlabel("متغير الزمن (t) - مولد تلقائياً")
-                ax.set_ylabel(y_trend)
-                ax.legend()
-                st.pyplot(fig)
-
-        else:  # تحليل الانحدار الخطي المتعدد
+        else:
             y_dep = st.selectbox("المتغير التابع (Y):", num_cols)
-            x_ind = st.multiselect("المتغيرات المستقلة (X):", [c for c in num_cols if c != y_dep])
-            
-            if st.button("تقدير الانحدار المتعدد") and x_ind:
-                df_r = df[[y_dep] + x_ind].apply(pd.to_numeric, errors="coerce").dropna()
+            x_ind = st.multiselect(
+                "المتغيرات المستقلة (X):", [c for c in num_cols if c != y_dep]
+            )
+            if st.button("تقدير الانحدار") and x_ind:
+                df_r = (
+                    df[[y_dep] + x_ind].apply(pd.to_numeric, errors="coerce").dropna()
+                )
                 y = df_r[y_dep]
                 X = sm.add_constant(df_r[x_ind])
                 m_ols = sm.OLS(y, X).fit()
 
-                st.markdown("### 🖥️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
+                st.markdown("### 🖥 النتائج الخام لنموذج الانحدار (Raw Software Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>{m_ols.summary().as_text()}</pre></div>',
                     unsafe_allow_html=True,
@@ -611,22 +570,37 @@ if df is not None:
                     "المعلمة": m_ols.params.index,
                     "المعامل": [f"{v:.4f}" for v in m_ols.params.values],
                     "t-stat": [f"{v:.4f}" for v in m_ols.tvalues.values],
-                    "معنوية المعامل": [("معنوي" if p < 0.05 else "غير معنوي") for p in m_ols.pvalues.values],
-                    "p-value": [f"{v:.4e}" for p in m_ols.pvalues.values],
+                    "p-value": [f"{v:.4e}" for v in m_ols.pvalues.values],
                 })
                 st.markdown("### 📊 جدول النتائج النهائية الملخص:")
                 st.dataframe(reg_res, use_container_width=True)
-                st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(reg_res), "multiple_regression.xlsx")
+                st.download_button(
+                    "📥 تحميل النتائج (Excel)",
+                    convert_df_to_excel(reg_res),
+                    "regression.xlsx",
+                )
 
                 fig, ax = plt.subplots(figsize=(8, 4))
                 ax.scatter(y, m_ols.fittedvalues, color="#1b5e20", alpha=0.8)
-                ax.plot([y.min(), y.max()], [y.min(), y.max()], "r--", lw=2, label="Ideal Fit")
+                ax.plot(
+                    [y.min(), y.max()],
+                    [y.min(), y.max()],
+                    "r--",
+                    lw=2,
+                    label="Ideal Fit",
+                )
                 ax.set_xlabel("Actual Values")
                 ax.set_ylabel("Fitted Values")
                 ax.legend()
                 st.pyplot(fig)
-else:
-    st.info("الرجاء رفع ملف البيانات للبدء في استخدام الأدوات التحليلية.")
+
+                st.markdown(
+                    academic_report_template(
+                        "تحليل الانحدار",
+                        f"بلغ معامل التحديد R² نحو {m_ols.rsquared:.4f} مع معنوية F.",
+                    ),
+                    unsafe_allow_html=True,
+                )
 # =========================================================
 # 🌾 القسم الثاني: دوال الإنتاج الشاملة (مع الرسومات البيانية)
 # =========================================================
