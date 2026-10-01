@@ -7,3 +7,4 @@ matplotlib
 requests
 duckduckgo-search
 arch
+openpyxl
