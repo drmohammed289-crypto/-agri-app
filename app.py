@@ -72,11 +72,22 @@ with st.sidebar:
         **3. حدود المسؤولية**
         * لا يتحمل مطور المنصة أي مسؤولية قانونية عن أي قرارات تتخذ بناءً على مخرجات النماذج.
         """)
+import io
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy.stats import f_oneway, jarque_bera, ttest_1samp, ttest_ind, ttest_rel
+import statsmodels.api as sm
+from statsmodels.regression.recursive_ls import RecursiveLS
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.ardl import ARDL
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
+import streamlit as st
 
-# ==========================================
-# 2. باقي أقسام المنصة (رفع البيانات والنماذج والتحليلات)
-# ==========================================
-# (هنا تبدأ باقي الأكواد الخاصة بك مثل st.file_uploader وغيرها)
 # استيراد آمن لاختبار فيليب-بيرون
 try:
     from arch.unitroot import PhillipsPerron
@@ -106,7 +117,7 @@ st.markdown(
 st.title("🌟 منصة الخبير الاقتصادي والقياسي الذكي")
 st.markdown(
     "### النظام الخبير المتكامل لإجراء التحليلات الإحصائية، النماذج القياسية،"
-    " الكفاءة الاقتصاديه، ودرساتات الجدوى الاقتصاديه"
+    " الكفاءة، ودرجات الجدوى المالية"
 )
 st.markdown("---")
 
@@ -261,12 +272,10 @@ if app_mode == "📁 معاينة البيانات والتحليل الوصفي
                 ),
             ),
             unsafe_allow_html=True,
-       
-        "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق",
-        "📈 القسم الثاني: تحليل الانحدار والاتجاه العام"
-    
-if df is not None:
-    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        )
+    else:
+        st.info("👈 يرجى رفع ملف البيانات أو توليدها من القائمة الجانبية.")
+
 # =========================================================
 # 📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق والانحدار
 # =========================================================
@@ -506,7 +515,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 X = sm.add_constant(df_r[x_ind])
                 m_ols = sm.OLS(y, X).fit()
 
-                st.markdown("### 🖥 النتائج الخام لنموذج الانحدار (Raw Software Output):")
+                st.markdown("### 🖥️️ النتائج الخام لنموذج الانحدار (Raw Software Output):")
                 st.markdown(
                     f'<div class="raw-output"><pre>{m_ols.summary().as_text()}</pre></div>',
                     unsafe_allow_html=True,
@@ -547,6 +556,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     ),
                     unsafe_allow_html=True,
                 )
+
 # =========================================================
 # 🌾 القسم الثاني: دوال الإنتاج الشاملة (مع الرسومات البيانية)
 # =========================================================
