@@ -14,7 +14,40 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 import streamlit as st
 import streamlit as st
+import streamlit as st
 
+# ==========================================
+# 1. نظام حماية المنصة برمز الدخول (في بداية الكود)
+# ==========================================
+
+# تحديد الرمز السري الخاص بك (يمكنك تغييره إلى أي رقم أو كلمة ترغب بها)
+CORRECT_PASSWORD = "123"  # استبدل "123" بالرمز الذي تريده
+
+# التحقق مما إذا كان المستخدم قد قام بتسجيل الدخول مسبقاً
+if "authenticated" not in st.session_state:
+  st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+  st.title("🔒 منصة التحليل الاقتصادي والقياسي")
+  st.warning("هذه المنصة محمية برمز مرور. يرجى إدخال الرمز للوصول إلى المحتوى.")
+
+  entered_password = st.text_input("أدخل رمز الدخول:", type="password")
+
+  if st.button("دخول"):
+    if entered_password == CORRECT_PASSWORD:
+      st.session_state.authenticated = True
+      st.success("تم تسجيل الدخول بنجاح!")
+      st.rerun()  # إعادة تحميل الصفحة لتفتح المنصة
+    else:
+      st.error("رمز الدخول غير صحيح. يرجى المحاولة مرة أخرى.")
+
+  # إيقاف تنفيذ باقي الكود تماماً وعدم عرض أي شيء من المنصة
+  st.stop()
+
+# ==========================================
+# 2. باقي أكواد المنصة الخاصة بك (لا تفتح إلا بعد نجاح الدخول)
+# ==========================================
+# (ضع هنا كل الكود الخاص بالمنصة: رفع الملفات، النماذج، الجداول، الفوتر، إلخ...)
 # ==========================================
 # 1. إعدادات الصفحة والشريط الجانبي (Sidebar)
 # ==========================================
