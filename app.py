@@ -261,59 +261,7 @@ if app_mode == "📁 معاينة البيانات والتحليل الوصفي
                 ),
             ),
             unsafe_allow_html=True,
-        )
-    else:
-        st.info("👈 يرجى رفع ملف البيانات أو توليدها من القائمة الجانبية.")
-import streamlit as st
-import pandas as pd
-import numpy as np
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
-from scipy.stats import ttest_1samp, ttest_ind, ttest_rel, f_oneway
-import matplotlib.pyplot as plt
-import io
-
-# دالة مساعدة لتصدير البيانات إلى Excel
-def convert_df_to_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=True, sheet_name='Sheet1')
-    processed_data = output.getvalue()
-    return processed_data
-
-# تنسيق CSS لتوضيح مخرجات البرامج (Raw Outputs)
-st.markdown("""
-    <style>
-    .raw-output {
-        background-color: #f4f4f4;
-        padding: 15px;
-        border-radius: 5px;
-        font-family: monospace;
-        color: #333333;
-        direction: ltr;
-        text-align: left;
-        overflow-x: auto;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-st.title("📊 نظام التحليل الإحصائي المتقدم")
-
-# رفع الملف
-uploaded_file = st.file_uploader("قم بترفع ملف البيانات (Excel أو CSV):", type=["xlsx", "csv"])
-df = None
-if uploaded_file is not None:
-    if uploaded_file.name.endswith('.csv'):
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_excel(uploaded_file)
-    st.success("تم تحميل البيانات بنجاح!")
-    st.dataframe(df.head())
-
-# القائمة الرئيسية للأقسام (تم إضافة القسم الثاني بشكل واضح ومستقل هنا)
-app_mode = st.sidebar.selectbox(
-    "اختر القسم الرئيسي:",
-    [
+       
         "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق",
         "📈 القسم الثاني: تحليل الانحدار والاتجاه العام"
     ]
