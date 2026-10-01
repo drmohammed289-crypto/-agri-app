@@ -264,14 +264,69 @@ if app_mode == "📁 معاينة البيانات والتحليل الوصفي
         )
     else:
         st.info("👈 يرجى رفع ملف البيانات أو توليدها من القائمة الجانبية.")
+import streamlit as st
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+from scipy.stats import ttest_1samp, ttest_ind, ttest_rel, f_oneway
+import matplotlib.pyplot as plt
+import io
 
-# =========================================================
-# 📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق
-# =========================================================
-elif app_mode == "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق":
-    st.subheader("📊 التحليلات الإحصائية، اختبارات الفروق، ومعاملات الارتباط")
-    if df is not None:
-        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+# دالة مساعدة لتصدير البيانات إلى Excel
+def convert_df_to_excel(df):
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=True, sheet_name='Sheet1')
+    processed_data = output.getvalue()
+    return processed_data
+
+# تنسيق CSS لتوضيح مخرجات البرامج (Raw Outputs)
+st.markdown("""
+    <style>
+    .raw-output {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        color: #333333;
+        direction: ltr;
+        text-align: left;
+        overflow-x: auto;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("📊 نظام التحليل الإحصائي المتقدم")
+
+# رفع الملف
+uploaded_file = st.file_uploader("قم بترفع ملف البيانات (Excel أو CSV):", type=["xlsx", "csv"])
+df = None
+if uploaded_file is not None:
+    if uploaded_file.name.endswith('.csv'):
+        df = pd.read_csv(uploaded_file)
+    else:
+        df = pd.read_excel(uploaded_file)
+    st.success("تم تحميل البيانات بنجاح!")
+    st.dataframe(df.head())
+
+# القائمة الرئيسية للأقسام (تم إضافة القسم الثاني بشكل واضح ومستقل هنا)
+app_mode = st.sidebar.selectbox(
+    "اختر القسم الرئيسي:",
+    [
+        "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق",
+        "📈 القسم الثاني: تحليل الانحدار والاتجاه العام"
+    ]
+)
+
+if df is not None:
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    # =========================================================
+    # 📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق
+    # =========================================================
+    if app_mode == "📊 القسم الأول: التحليلات الإحصائية واختبارات الفروق":
+        st.subheader("📊 التحليلات الإحصائية، اختبارات الفروق، ومعاملات الارتباط")
         sub1 = st.selectbox(
             "اختر الأداة التحليلية:",
             [
@@ -379,7 +434,6 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
 
             elif "One-Way ANOVA" in t_choice:
                 dep_an = st.selectbox("متغير الاستجابة:", num_cols)
-                cat_cols = df.select_dtypes(include=[object, 'category']).columns.tolist()
                 group_col = st.selectbox("متغير التصنيف (المجموعات):", df.columns.tolist())
                 
                 if st.button("تنفيذ One-Way ANOVA"):
@@ -412,9 +466,6 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 factor2 = st.selectbox("المتغير المستقل الثاني (Factor B):", [c for c in all_cols if c != factor1], key="f2")
 
                 if st.button("تنفيذ Two-Way ANOVA"):
-                    import statsmodels.api as sm
-                    from statsmodels.formula.api import ols
-                    
                     formula = f"Q('{dep_an}') ~ C(Q('{factor1}')) + C(Q('{factor2}')) + C(Q('{factor1}')):C(Q('{factor2}'))"
                     model = ols(formula, data=df).fit()
                     anova_table = sm.stats.anova_lm(model, typ=2)
@@ -434,7 +485,7 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                     st.download_button("📥 تحميل (Excel)", convert_df_to_excel(anova_table.reset_index()), "anova_two_way.xlsx")
 
         else:  # معاملات الارتباط
-            c_vars = st.multiselect("اختر المتغيرات:", num_cols, default=num_cols[:3])
+            c_vars = st.multiselect("اختر المتغيرات:", num_cols, default=num_cols[:min(3, len(num_cols))])
             if len(c_vars) >= 2 and st.button("حساب الارتباط"):
                 df_c = df[c_vars].apply(pd.to_numeric, errors="coerce").dropna()
                 pr = df_c.corr(method="pearson")
@@ -454,13 +505,11 @@ elif app_mode == "📊 القسم الأول: التحليلات الإحصائ�
                 st.download_button("📥 تحميل (Excel)", convert_df_to_excel(pr), "correlation.xlsx")
 
 
-# =========================================================
-# 📈 القسم الثاني: تحليل الانحدار والاتجاه العام (قسم مستقل جديد)
-# =========================================================
-elif app_mode == "📈 القسم الثاني: تحليل الانحدار والاتجاه العام":
-    st.subheader("📈 تحليل الانحدار ونماذج الاتجاه العام (Trend Analysis)")
-    if df is not None:
-        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    # =========================================================
+    # 📈 القسم الثاني: تحليل الانحدار والاتجاه العام (مستقل تماماً)
+    # =========================================================
+    elif app_mode == "📈 القسم الثاني: تحليل الانحدار والاتجاه العام":
+        st.subheader("📈 تحليل الانحدار ونماذج الاتجاه العام (Trend Analysis)")
         reg_sub = st.selectbox(
             "اختر الأداة التحليلية:",
             [
@@ -496,7 +545,6 @@ elif app_mode == "📈 القسم الثاني: تحليل الانحدار وا
                     eq_str = f"Y = {model.params[0]:.4f} + {model.params[1]:.4f} * t"
                 
                 elif "الأسي" in trend_model_type:
-                    # النموذج الأسي اللوغاريتمي ln(Y) = a + b*t
                     valid_idx = clean_data["Y"] > 0
                     y_log = np.log(clean_data.loc[valid_idx, "Y"])
                     t_val = sm.add_constant(clean_data.loc[valid_idx, "t"])
@@ -513,8 +561,6 @@ elif app_mode == "📈 القسم الثاني: تحليل الانحدار وا
                     clean_data["Fitted"] = np.nan
                     clean_data.loc[valid_idx, "Fitted"] = np.exp(model.fittedvalues)
                     eq_str = f"ln(Y) = {model.params[0]:.4f} + {model.params[1]:.4f} * t"
-
-                sig_status = "معنوي إحصائياً (Significant)" if model.pvalues.iloc[-1] < 0.05 else "غير معنوي (Not Significant)"
 
                 st.markdown("### 📐 الصيغة الرياضية للنموذج المقدر:")
                 st.info(f"الصيغة الرياضية: `{eq_str}`")
@@ -537,7 +583,6 @@ elif app_mode == "📈 القسم الثاني: تحليل الانحدار وا
                 st.dataframe(reg_res, use_container_width=True)
                 st.download_button("📥 تحميل النتائج (Excel)", convert_df_to_excel(reg_res), "trend_analysis.xlsx")
 
-                # رسم بياني للاتجاة العام
                 fig, ax = plt.subplots(figsize=(8, 4))
                 ax.plot(clean_data["t"], clean_data["Y"], label="القيم الفعلية (Actual)", marker="o", color="#1b5e20", alpha=0.7)
                 ax.plot(clean_data["t"], clean_data["Fitted"], label="خط الاتجاه المقدر (Trend)", color="red", lw=2)
@@ -567,7 +612,7 @@ elif app_mode == "📈 القسم الثاني: تحليل الانحدار وا
                     "المعامل": [f"{v:.4f}" for v in m_ols.params.values],
                     "t-stat": [f"{v:.4f}" for v in m_ols.tvalues.values],
                     "معنوية المعامل": [("معنوي" if p < 0.05 else "غير معنوي") for p in m_ols.pvalues.values],
-                    "p-value": [f"{v:.4e}" for v in m_ols.pvalues.values],
+                    "p-value": [f"{v:.4e}" for p in m_ols.pvalues.values],
                 })
                 st.markdown("### 📊 جدول النتائج النهائية الملخص:")
                 st.dataframe(reg_res, use_container_width=True)
@@ -580,6 +625,8 @@ elif app_mode == "📈 القسم الثاني: تحليل الانحدار وا
                 ax.set_ylabel("Fitted Values")
                 ax.legend()
                 st.pyplot(fig)
+else:
+    st.info("الرجاء رفع ملف البيانات للبدء في استخدام الأدوات التحليلية.")
 # =========================================================
 # 🌾 القسم الثاني: دوال الإنتاج الشاملة (مع الرسومات البيانية)
 # =========================================================
